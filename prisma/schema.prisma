@@ -1,0 +1,200 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Cliente {
+  id        String   @id @default(cuid())
+  nombre    String
+  documento String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relaciones
+  alquileres Alquiler[]
+  turnos     Turno[]
+}
+
+enum TipoProducto {
+  JETSKY
+  CUATRICICLO
+  EQUIPO_BUCEO
+  TABLA_SURF
+}
+
+enum TipoTabla {
+  NINO
+  ADULTO
+}
+
+model Producto {
+  id           String       @id @default(cuid())
+  nombre       String
+  precio       Float
+  tipo         TipoProducto // Tipo de producto: "JetSky", "Cuatriciclo", "EquipoBuceo", "TablaSurf"
+  capacidadMax Int? // Solo para JetSky y Cuatriciclo (valor = 2)
+  tipoTabla    TipoTabla? // Solo para TablaSurf ("Niño" o "Adulto")
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  // Relaciones
+  alquileres   AlquilerProducto[]
+  dispositivos ProductoDispositivoSeguridad[]
+
+  @@map("productos")
+}
+
+enum NombreDispositivo {
+  CASCO
+  CHALECO_SALVAVIDAS
+}
+
+model DispositivoSeguridad {
+  id        String            @id @default(cuid())
+  nombre    NombreDispositivo // "Casco" o "ChalecoSalvavidas"
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+
+  // Relaciones
+  productos  ProductoDispositivoSeguridad[]
+  alquileres AlquilerDispositivoSeguridad[]
+
+  @@map("dispositivos_seguridad")
+}
+
+model ProductoDispositivoSeguridad {
+  id            String @id @default(cuid())
+  productoId    String
+  dispositivoId String
+
+  // Relaciones
+  producto    Producto             @relation(fields: [productoId], references: [id], onDelete: Cascade)
+  dispositivo DispositivoSeguridad @relation(fields: [dispositivoId], references: [id], onDelete: Cascade)
+
+  @@unique([productoId, dispositivoId])
+  @@map("producto_dispositivos")
+}
+
+enum EstadoTurno {
+  RESERVADO
+  CANCELADO
+  DISPONIBLE
+}
+
+model Turno {
+  id         String      @id @default(cuid())
+  fechaHora  DateTime
+  duracion   Int         @default(30) // en minutos
+  estado     EstadoTurno // "Reservado", "Cancelado", "Disponible"
+  clienteId  String?
+  alquilerId String?
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  // Relaciones
+  cliente  Cliente?  @relation(fields: [clienteId], references: [id])
+  alquiler Alquiler? @relation(fields: [alquilerId], references: [id])
+
+  @@map("turnos")
+}
+
+enum EstadoAlquiler {
+  EN_PROCESO
+  COMPLETADO
+  CANCELADO
+}
+
+model Alquiler {
+  id                 String         @id @default(cuid())
+  clienteId          String
+  total              Float
+  estado             EstadoAlquiler // "En Proceso", "Completado", "Cancelado"
+  descuentoAplicado  Boolean        @default(false)
+  seguroAplicado     Boolean        @default(false)
+  fechaCreacion      DateTime       @default(now())
+  fechaActualizacion DateTime       @updatedAt
+
+  // Relaciones
+  cliente      Cliente                        @relation(fields: [clienteId], references: [id])
+  productos    AlquilerProducto[]
+  turnos       Turno[]
+  pago         Pago?
+  dispositivos AlquilerDispositivoSeguridad[]
+
+  @@map("alquileres")
+}
+
+model AlquilerProducto {
+  id         String @id @default(cuid())
+  alquilerId String
+  productoId String
+  cantidad   Int    @default(1)
+
+  // Relaciones
+  alquiler Alquiler @relation(fields: [alquilerId], references: [id], onDelete: Cascade)
+  producto Producto @relation(fields: [productoId], references: [id])
+
+  @@unique([alquilerId, productoId])
+  @@map("alquiler_productos")
+}
+
+model AlquilerDispositivoSeguridad {
+  id            String @id @default(cuid())
+  alquilerId    String
+  dispositivoId String
+  cantidad      Int    @default(1)
+
+  // Relaciones
+  alquiler    Alquiler             @relation(fields: [alquilerId], references: [id], onDelete: Cascade)
+  dispositivo DispositivoSeguridad @relation(fields: [dispositivoId], references: [id])
+
+  @@unique([alquilerId, dispositivoId])
+  @@map("alquiler_dispositivos")
+}
+
+enum EstadoPago {
+  PENDIENTE
+  PAGADO
+}
+
+model Pago {
+  id           String     @id @default(cuid())
+  alquilerId   String     @unique
+  monto        Float
+  tipoMonedaId String
+  estado       EstadoPago // "Pendiente", "Pagado"
+  fechaPago    DateTime?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  // Relaciones
+  alquiler   Alquiler   @relation(fields: [alquilerId], references: [id])
+  tipoMoneda TipoMoneda @relation(fields: [tipoMonedaId], references: [id])
+
+  @@map("pagos")
+}
+
+enum NombreMoneda {
+  MONEDA_LOCAL
+  MONEDA_EXTRANJERA
+}
+
+model TipoMoneda {
+  id         String       @id @default(cuid())
+  nombre     NombreMoneda // "Moneda Local", "Moneda Extranjera"
+  tasaCambio Float        @default(1.0)
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  // Relaciones
+  pagos Pago[]
+
+  @@map("tipos_moneda")
+}
