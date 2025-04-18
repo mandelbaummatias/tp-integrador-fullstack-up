@@ -13,15 +13,10 @@ import {
 
 export async function PUT(
   req: NextRequest,
-  context: { params: { id: string } }
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { params } = context;
-    const awaitedParams = await params;
-    const clienteId = awaitedParams.id;
-
-
-
+    const clienteId = params.id;
 
     const errorId = validarClienteId(clienteId);
     if (errorId) return errorId;
