@@ -1,3 +1,47 @@
+## Instrucciones de Ejecución
+
+Para ejecutar la aplicación, sigue estos pasos en tu terminal (CMD):
+
+1.  Clona el repositorio desde GitHub:
+
+    ```bash
+    git clone [https://github.com/mandelbaummatias/tp-integrador-fullstack-up.git](https://github.com/mandelbaummatias/tp-integrador-fullstack-up.git)
+    ```
+
+2.  Navega al directorio del proyecto:
+
+    ```bash
+    cd tp-integrador-fullstack-up
+    ```
+
+3.  Crea un archivo `.env` en esta carpeta y agrega la variable de entorno proporcionada. Por ejemplo, si tu URL de la base de datos es `miurlremota`, puedes hacerlo con el siguiente comando:
+
+    ```bash
+    echo DATABASE_URL=miurlremota > .env
+    ```
+
+    **Importante:** Asegúrate de reemplazar `miurlremota` con la URL de tu base de datos.
+
+4.  Instala las dependencias del proyecto:
+
+    ```bash
+    npm i
+    ```
+
+5.  Genera el cliente de Prisma:
+
+    ```bash
+    npx prisma generate
+    ```
+
+6.  Ejecuta el servidor de desarrollo:
+    ```bash
+    npm run dev
+    ```
+    Este comando iniciará el servidor y podrás acceder a la documentación de los endpoints de la API.
+
+---
+
 # API Endpoints Documentation
 
 Este documento describe los endpoints disponibles en la API del sistema de reservas.
