@@ -1,0 +1,157 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Cliente {
+  id        String @id @default(cuid())
+  nombre    String
+  documento String @unique
+
+  reservas     Reserva[]
+  SaldoCliente SaldoCliente?
+
+  @@map("cliente")
+}
+
+model SaldoCliente {
+  id              String @id @default(cuid())
+  clienteId       String @unique
+  montoLocal      Float  @default(0)
+  montoExtranjero Float  @default(0)
+
+  cliente Cliente @relation(fields: [clienteId], references: [id])
+
+  @@map("saldo_cliente")
+}
+
+enum TipoProducto {
+  JETSKY
+  CUATRICICLO
+  EQUIPO_BUCEO
+  TABLA_SURF
+}
+
+enum TipoTabla {
+  NINO
+  ADULTO
+}
+
+model Producto {
+  id           String       @id @default(cuid())
+  nombre       String
+  precio       Float
+  tipo         TipoProducto
+  capacidadMax Int?
+  tipoTabla    TipoTabla?
+
+  reservas Reserva[]
+
+  @@map("producto")
+}
+
+enum NombreDispositivo {
+  CASCO
+  CHALECO_SALVAVIDAS
+}
+
+model DispositivoSeguridad {
+  id     String            @id @default(cuid())
+  nombre NombreDispositivo
+
+  reservas ReservaDispositivoSeguridad[]
+
+  @@map("dispositivo_seguridad")
+}
+
+enum EstadoTurno {
+  DISPONIBLE
+  RESERVADO
+  CANCELADO
+}
+
+model Turno {
+  id        String      @id @default(cuid())
+  fechaHora DateTime
+  estado    EstadoTurno @default(DISPONIBLE)
+
+  reserva Reserva?
+
+  @@map("turno")
+}
+
+enum EstadoReserva {
+  PENDIENTE_PAGO
+  PAGADA
+  CANCELADA
+}
+
+enum MedioPago {
+  EFECTIVO
+  TRANSFERENCIA
+}
+
+enum TipoMoneda {
+  MONEDA_LOCAL
+  MONEDA_EXTRANJERA
+}
+
+model Pago {
+  id                  String     @id @default(cuid())
+  reservaId           String
+  monto               Float
+  moneda              TipoMoneda
+  medioPago           MedioPago
+  fechaPago           DateTime   @default(now())
+  aplicoDescuento     Boolean    @default(false)
+  porcentajeDescuento Int        @default(0)
+
+  reserva Reserva @relation(fields: [reservaId], references: [id])
+
+  @@map("pago")
+}
+
+model Reserva {
+  id               String        @id @default(cuid())
+  clienteId        String
+  cantidadPersonas Int           @default(1)
+  estado           EstadoReserva @default(PENDIENTE_PAGO)
+  medioPago        MedioPago     @default(EFECTIVO)
+  tipoMoneda       TipoMoneda    @default(MONEDA_LOCAL)
+  incluyeSeguro    Boolean       @default(false)
+
+  cliente      Cliente                       @relation(fields: [clienteId], references: [id])
+  turnoId      String                        @unique
+  turno        Turno                         @relation(fields: [turnoId], references: [id])
+  productoId   String
+  producto     Producto                      @relation(fields: [productoId], references: [id])
+  dispositivos ReservaDispositivoSeguridad[]
+  pagos        Pago[]
+
+  @@map("reserva")
+}
+
+model ReservaDispositivoSeguridad {
+  id            String @id @default(cuid())
+  reservaId     String
+  dispositivoId String
+  cantidad      Int    @default(1)
+
+  reserva     Reserva              @relation(fields: [reservaId], references: [id], onDelete: Cascade)
+  dispositivo DispositivoSeguridad @relation(fields: [dispositivoId], references: [id])
+
+  @@unique([reservaId, dispositivoId])
+  @@map("reserva_dispositivo")
+}
+
+model TipoMonedaConfig {
+  id         String     @id @default(cuid())
+  nombre     TipoMoneda
+  tasaCambio Float      @default(2.0)
+
+  @@map("tipo_moneda")
+}
