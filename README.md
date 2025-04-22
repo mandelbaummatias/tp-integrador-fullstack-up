@@ -35,10 +35,14 @@ Para ejecutar la aplicación, sigue estos pasos en tu terminal (CMD):
     ```
 
 6.  Ejecuta el servidor de desarrollo:
+
     ```bash
     npm run dev
     ```
+
     Este comando iniciará el servidor y podrás acceder a la documentación de los endpoints de la API.
+
+7.  Correr colección "tp-integrador-parador-CU's" en Postman
 
 ---
 
