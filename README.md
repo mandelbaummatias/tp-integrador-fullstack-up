@@ -5,7 +5,7 @@ Para ejecutar la aplicación, sigue estos pasos en tu terminal (CMD):
 1.  Clona el repositorio desde GitHub:
 
     ```bash
-    git clone [https://github.com/mandelbaummatias/tp-integrador-fullstack-up.git](https://github.com/mandelbaummatias/tp-integrador-fullstack-up.git)
+    git clone https://github.com/mandelbaummatias/tp-integrador-fullstack-up.git
     ```
 
 2.  Navega al directorio del proyecto:
