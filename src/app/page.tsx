@@ -1,103 +1,146 @@
-import Image from "next/image";
+"use client"
+
+
+import { useEffect, useState, useCallback } from "react"
+import type { Product } from "./interface/Product"
+import { SailboatIcon as Boat, Bike, Droplets, Waves, Loader2 } from "lucide-react"
+import { getAvailableProducts } from "@/action/product/getAllProducts"
+import { Button } from "./components/ui/button"
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "./components/ui/card"
+import { Badge } from "./components/ui/badge"
+import { getAvailableTurns } from "@/action/turno/getAvailableTurnos"
+
+
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [products, setProducts] = useState<Product[]>([])
+  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState<boolean>(true)
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  const loadAvailableProducts = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    const result = await getAvailableProducts()
+    const result2 = await getAvailableTurns()
+    console.log("Turnos disponibles:", result2)
+
+    if (result?.ok && result.products) {
+      setProducts(result.products)
+      console.log("Productos disponibles:", result.products)
+    } else {
+      setError(result?.message || "Failed to load available products.")
+    }
+    setLoading(false)
+  }, [])
+
+  useEffect(() => {
+    loadAvailableProducts()
+  }, [loadAvailableProducts])
+
+  const getProductIcon = (tipo: string) => {
+    switch (tipo) {
+      case "JETSKY":
+        return <Boat className="h-10 w-10 text-blue-500" />
+      case "CUATRICICLO":
+        return <Bike className="h-10 w-10 text-orange-500" />
+      case "EQUIPO_BUCEO":
+        return <Droplets className="h-10 w-10 text-cyan-500" />
+      case "TABLA_SURF":
+        return <Waves className="h-10 w-10 text-teal-500" />
+      default:
+        return <Boat className="h-10 w-10 text-blue-500" />
+    }
+  }
+
+  const getProductTypeName = (tipo: string) => {
+    switch (tipo) {
+      case "JETSKY":
+        return "Moto Acuática"
+      case "CUATRICICLO":
+        return "Cuatriciclo"
+      case "EQUIPO_BUCEO":
+        return "Equipo de Buceo"
+      case "TABLA_SURF":
+        return "Tabla de Surf"
+      default:
+        return tipo
+    }
+  }
+
+  const handleReserve = (productId: string) => {
+    console.log("Reservando producto:", productId)
+    // Aquí implementarías la lógica para reservar el producto
+  }
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-sky-100 to-blue-50">
+        <Loader2 className="h-12 w-12 text-blue-500 animate-spin" />
+        <p className="mt-4 text-lg text-blue-800">Cargando productos disponibles...</p>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-sky-100 to-blue-50">
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg max-w-md">
+          <p className="font-bold">Error</p>
+          <p>{error}</p>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-sky-100 to-blue-50 py-8 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto">
+        <header className="text-center mb-12">
+          <h1 className="text-4xl font-bold text-blue-900 mb-2">Paraíso Acuático</h1>
+          <p className="text-xl text-blue-700">Descubre nuestros productos y vive una experiencia inolvidable</p>
+        </header>
+
+        <section>
+          <h2 className="text-2xl font-semibold text-blue-800 mb-6">Productos Disponibles</h2>
+
+          {products.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {products.map((product) => (
+                <Card
+                  key={product.id}
+                  className="overflow-hidden hover:shadow-lg transition-shadow duration-300 border-blue-200"
+                >
+                  <CardHeader className="bg-gradient-to-r from-blue-50 to-sky-50 pb-2">
+                    <div className="flex justify-between items-start">
+                      <CardTitle className="text-xl text-blue-800">{product.nombre}</CardTitle>
+                      <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                        {getProductTypeName(product.tipo)}
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="pt-6 pb-4 flex flex-col items-center">
+                    <div className="mb-4 p-4 bg-blue-50 rounded-full">{getProductIcon(product.tipo)}</div>
+                    <p className="text-2xl font-bold text-blue-900">${product.precio.toFixed(2)}</p>
+                  </CardContent>
+                  <CardFooter className="bg-gradient-to-r from-blue-50 to-sky-50 pt-2">
+                    <Button
+                      className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                      onClick={() => handleReserve(product.id)}
+                    >
+                      Reservar
+                    </Button>
+                  </CardFooter>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-6 py-8 rounded-lg text-center">
+              <p className="text-lg">No hay productos disponibles en este momento.</p>
+              <p className="mt-2">Por favor, intente más tarde o contacte con nuestro personal.</p>
+            </div>
+          )}
+        </section>
+      </div>
     </div>
-  );
+  )
 }

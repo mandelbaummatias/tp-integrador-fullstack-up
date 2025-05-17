@@ -4,7 +4,9 @@ import { obtenerHoraActualLocal } from '@/utils/conversorHora';
 
 
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({
+  log: ["query", "info", "warn", "error"]
+});
 
 /**
  * Valida las opciones de pago según el medio de pago y el tipo de moneda.

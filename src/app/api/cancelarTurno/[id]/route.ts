@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient, EstadoReserva, EstadoTurno, TipoMoneda } from '@prisma/client';
 import { validarTurnoId, validarExistenciaTurnoYReserva, validarReglaCancelacion } from './utils/validaciones';
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({
+  log: ["query", "info", "warn", "error"]
+});
 
 export async function PUT(
   req: NextRequest,

@@ -14,6 +14,7 @@ export async function POST() {
 
     const ahora = obtenerHoraActualLocal();
 
+    console.log(ahora);
 
 
     const reservasPendientes = await prisma.reserva.findMany({

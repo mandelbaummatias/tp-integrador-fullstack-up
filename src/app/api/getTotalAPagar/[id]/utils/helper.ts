@@ -1,7 +1,9 @@
 import { PrismaClient, EstadoReserva, TipoMoneda, MedioPago } from '@prisma/client';
 import { ReservaConProducto } from '../../../interface/ReservaConProductos';
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({
+  log: ["query", "info", "warn", "error"]
+});
 
 /**
  * Valida que se haya proporcionado un ID de cliente.
