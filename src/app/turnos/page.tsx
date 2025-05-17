@@ -16,7 +16,6 @@ import Skeleton from '../components/ui/skeleton/general-skeleton';
 import Error from '../components/ui/error/error';
 import { Alert, AlertDescription } from '../components/ui/alert';
 import { useToast } from '../hooks/use-toast';
-import { ToastProvider } from '../components/ui/toaster';
 
 export default function Turnos() {
   const { toast } = useToast();
@@ -165,18 +164,6 @@ export default function Turnos() {
           <p className="text-blue-700">Selecciona los horarios que deseas reservar</p>
         </header>
 
-        <Button
-          variant="outline"
-          onClick={() => {
-            console.log('click');
-
-            toast({
-              description: "This is a test toast message.",
-            })
-          }}
-        >
-          Show Test Toast
-        </Button>
 
         {reservaExitosa && (
           <Alert className="mb-6 bg-green-50 border-green-200">

@@ -94,8 +94,7 @@ const validarReglasNegocio = async (
   turnoId: string,
   medioPago?: MedioPago,
 ): Promise<NextResponse | null> => {
-
-
+  // Obtener el turno que se quiere reservar
   const turno = await prisma.turno.findUnique({
     where: { id: turnoId }
   });
@@ -104,23 +103,18 @@ const validarReglasNegocio = async (
     return NextResponse.json({ error: 'Turno no encontrado.' }, { status: 404 });
   }
 
-
   const ahora = obtenerHoraActualLocal();
 
-
-
-
+  // No permitir reservar turnos pasados
   if (turno.fechaHora < ahora) {
     return NextResponse.json({
       error: 'No se pueden reservar turnos en fechas u horas pasadas.'
     }, { status: 400 });
   }
 
-
+  // Validar regla de efectivo con 2 horas de anticipación
   if (medioPago == MedioPago.EFECTIVO) {
     const dosHorasAntes = new Date(turno.fechaHora.getTime() - 2 * 60 * 60 * 1000);
-
-
 
     if (ahora >= dosHorasAntes) {
       return NextResponse.json({
@@ -131,14 +125,8 @@ const validarReglasNegocio = async (
 
   const fechaTurno = turno.fechaHora;
 
-
-
-
-
-
-
-
-  const turnosCliente = await prisma.reserva.findMany({
+  // Obtener todas las reservas activas del cliente
+  const reservasCliente = await prisma.reserva.findMany({
     where: {
       clienteId,
       estado: {
@@ -147,70 +135,60 @@ const validarReglasNegocio = async (
     },
     include: {
       turno: true
-    },
-    orderBy: {
-      turno: {
-        fechaHora: 'asc'
-      }
     }
   });
 
+  // Verificar si el turno que se intenta reservar ya existe para este cliente
+  const turnoYaReservado = reservasCliente.some(
+    reserva => reserva.turnoId === turnoId
+  );
 
-
-
-  const turnosOrdenados = turnosCliente
-    .map(reserva => new Date(reserva.turno.fechaHora))
-    .sort((a, b) => a.getTime() - b.getTime());
-
-  let consecutivos = 1;
-  let lastTime: Date | null = null;
-
-
-
-
-  for (const currentTime of turnosOrdenados) {
-    if (lastTime) {
-      const diffMinutos = (currentTime.getTime() - lastTime.getTime()) / (1000 * 60);
-
-      if (diffMinutos === 30) {
-        consecutivos++;
-      } else {
-        consecutivos = 1;
-      }
-    }
-
-    lastTime = currentTime;
-
-
-    if (consecutivos === 3 && lastTime.getTime() + 30 * 60 * 1000 === fechaTurno.getTime()) {
-      return NextResponse.json({
-        error: 'No se pueden reservar más de 3 turnos consecutivos. Ya tiene 3 turnos previos consecutivos.'
-      }, { status: 400 });
-    }
-
-
-
-
-    for (let i = 0; i < turnosOrdenados.length - 1; i++) {
-
-
-      const first = turnosOrdenados[i];
-      const second = turnosOrdenados[i + 1];
-
-
-      if (first.getTime() + 30 * 60 * 1000 === fechaTurno.getTime() &&
-        fechaTurno.getTime() + 30 * 60 * 1000 === second.getTime()) {
-        return NextResponse.json({
-          error: 'No se puede reservar este turno porque generaría 3 turnos consecutivos.'
-        }, { status: 400 });
-      }
-    }
-
+  if (turnoYaReservado) {
+    return NextResponse.json({
+      error: 'Ya tiene una reserva para este turno.'
+    }, { status: 400 });
   }
 
+  // Extraer las fechas de los turnos del cliente y agregar la nueva fecha del turno a reservar
+  const fechasTurnos = reservasCliente.map(reserva => reserva.turno.fechaHora);
 
+  // Agregar la fecha del nuevo turno que se está intentando reservar
+  const todasLasFechas = [...fechasTurnos, fechaTurno];
 
+  // Ordenar todas las fechas cronológicamente
+  todasLasFechas.sort((a, b) => a.getTime() - b.getTime());
 
+  // Buscar secuencias de 4 o más turnos consecutivos
+  let consecutivos = 1;
+
+  for (let i = 1; i < todasLasFechas.length; i++) {
+    const fechaActual = todasLasFechas[i];
+    const fechaAnterior = todasLasFechas[i - 1];
+
+    // Verificar si son consecutivos (30 minutos de diferencia)
+    const diffMinutos = (fechaActual.getTime() - fechaAnterior.getTime()) / (1000 * 60);
+
+    if (diffMinutos === 30) {
+      consecutivos++;
+
+      // Si encontramos 4 o más turnos consecutivos y uno de ellos es el nuevo turno
+      if (consecutivos >= 4 && (
+        fechaActual.getTime() === fechaTurno.getTime() ||
+        fechaAnterior.getTime() === fechaTurno.getTime() ||
+        (i >= 2 && todasLasFechas[i - 2].getTime() === fechaTurno.getTime()) ||
+        (i >= 3 && todasLasFechas[i - 3].getTime() === fechaTurno.getTime())
+      )) {
+        return NextResponse.json({
+          error: 'No se pueden reservar más de 3 turnos consecutivos.'
+        }, { status: 400 });
+      }
+    } else {
+      // Resetear contador si no son consecutivos
+      consecutivos = 1;
+    }
+  }
+
+  // Validar ventana de anticipación máxima de 48 horas
   const diferenciaHoras = (fechaTurno.getTime() - ahora.getTime()) / (1000 * 60 * 60);
 
   if (diferenciaHoras > 48) {
@@ -221,7 +199,6 @@ const validarReglasNegocio = async (
 
   return null;
 };
-
 /**
  * Obtiene los dispositivos de seguridad necesarios según el tipo de producto y la cantidad de personas.
  *

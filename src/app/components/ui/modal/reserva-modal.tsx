@@ -14,7 +14,7 @@ import { Input } from "../input"
 import { RadioGroup, RadioGroupItem } from "../radio-group"
 import { Checkbox } from "../checkbox"
 import { Button } from "../button"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { ReservaModalProps } from "./ReservaModalProps"
 
 export function ReservaModal({
@@ -36,6 +36,20 @@ export function ReservaModal({
     tipoMoneda: "MONEDA_LOCAL" as TipoMoneda,
     incluyeSeguro: false,
   })
+
+  useEffect(() => {
+    if (isOpen) {
+      // Limpiar errores y reiniciar el formulario si lo deseas
+      setError(null)
+      // También podrías resetear formData si querés que cada apertura empiece limpio:
+      // setFormData({
+      //   cantidadPersonas: 1,
+      //   medioPago: "EFECTIVO",
+      //   tipoMoneda: "MONEDA_LOCAL",
+      //   incluyeSeguro: false,
+      // })
+    }
+  }, [isOpen])
 
   // Get the selected turnos data based on IDs and sort by date/time
   const selectedTurnos = turnos.filter(turno => turnoIds.includes(turno.id))
@@ -171,11 +185,11 @@ export function ReservaModal({
       })
 
       if (result.ok) {
-        toast({
-          title: "Reserva exitosa",
-          description: "Tu turno ha sido reservado correctamente",
-          variant: "default",
-        })
+        // toast({
+        //   title: "Reserva exitosa",
+        //   description: "Tu turno ha sido reservado correctamente",
+        //   variant: "default",
+        // })
 
         // Call the success callback to update the parent component
         if (onReservaSuccess) {
