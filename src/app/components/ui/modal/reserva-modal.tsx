@@ -39,17 +39,13 @@ export function ReservaModal({
 
   useEffect(() => {
     if (isOpen) {
-      // Limpiar errores y reiniciar el formulario si lo deseas
       setError(null)
-      // También podrías resetear formData si querés que cada apertura empiece limpio:
-      // setFormData({
-      //   cantidadPersonas: 1,
-      //   medioPago: "EFECTIVO",
-      //   tipoMoneda: "MONEDA_LOCAL",
-      //   incluyeSeguro: false,
-      // })
     }
   }, [isOpen])
+
+
+  console.log('PRODUCT ID', productoId);
+
 
   // Get the selected turnos data based on IDs and sort by date/time
   const selectedTurnos = turnos.filter(turno => turnoIds.includes(turno.id))

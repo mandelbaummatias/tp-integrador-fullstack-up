@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-
+import { useSearchParams } from 'next/navigation';
 import { Calendar, Clock, Info, CheckCircle } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
@@ -18,6 +18,9 @@ import { Alert, AlertDescription } from '../components/ui/alert';
 import { useToast } from '../hooks/use-toast';
 
 export default function Turnos() {
+  const searchParams = useSearchParams();
+  const productoId = searchParams.get('productId') || '';
+
   const { toast } = useToast();
   const [turnos, setTurnos] = useState<Turno[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,11 +34,7 @@ export default function Turnos() {
   }, []);
 
   async function loadTurnos() {
-
-
     try {
-
-
       setLoading(true);
       const result = await getAvailableTurns();
 
@@ -162,8 +161,12 @@ export default function Turnos() {
         <header className="text-center mb-8">
           <h1 className="text-3xl font-bold text-blue-900 mb-2">Turnos Disponibles</h1>
           <p className="text-blue-700">Selecciona los horarios que deseas reservar</p>
+          {productoId && (
+            <Badge className="mt-2 bg-blue-100 text-blue-800">
+              Producto seleccionado: {productoId}
+            </Badge>
+          )}
         </header>
-
 
         {reservaExitosa && (
           <Alert className="mb-6 bg-green-50 border-green-200">
@@ -172,9 +175,6 @@ export default function Turnos() {
               ¡Tu reserva se ha completado con éxito! Los turnos seleccionados han sido reservados.
             </AlertDescription>
           </Alert>
-
-
-
         )}
 
         <div className="bg-white rounded-lg shadow-md p-4 mb-6">
@@ -291,6 +291,7 @@ export default function Turnos() {
           : new Date().toISOString()}
         turnos={turnos}
         onReservaSuccess={handleReservaSuccess}
+        productoId={productoId}
       />
     </div>
   );

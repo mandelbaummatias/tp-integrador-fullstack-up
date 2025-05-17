@@ -1,7 +1,7 @@
 "use client"
 
-
 import { useEffect, useState, useCallback } from "react"
+import { useRouter } from "next/navigation"
 import type { Product } from "./interface/Product"
 import { SailboatIcon as Boat, Bike, Droplets, Waves, Loader2 } from "lucide-react"
 import { getAvailableProducts } from "@/action/product/getAllProducts"
@@ -10,9 +10,8 @@ import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "./componen
 import { Badge } from "./components/ui/badge"
 import { getAvailableTurns } from "@/action/turno/getAvailableTurnos"
 
-
-
 export default function Home() {
+  const router = useRouter()
   const [products, setProducts] = useState<Product[]>([])
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState<boolean>(true)
@@ -69,7 +68,8 @@ export default function Home() {
 
   const handleReserve = (productId: string) => {
     console.log("Reservando producto:", productId)
-    // Aquí implementarías la lógica para reservar el producto
+    // Navegar a la página de turnos pasando el ID del producto como query parameter
+    router.push(`/turnos?productId=${productId}`)
   }
 
   if (loading) {
