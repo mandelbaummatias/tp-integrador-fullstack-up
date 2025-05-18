@@ -1,4 +1,3 @@
-// ReservaModal.tsx with improved turno information display
 "use client"
 
 import type React from "react"
@@ -21,11 +20,11 @@ export function ReservaModal({
   isOpen,
   onClose,
   turnoIds,
-  fechaHora,
   turnos = [],
   onReservaSuccess,
   clienteId = "",
-  productoId = ""
+  productoId = "",
+  productType = ""
 }: ReservaModalProps) {
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
@@ -37,15 +36,30 @@ export function ReservaModal({
     incluyeSeguro: false,
   })
 
+  // Set cantidadPersonas based on product type
   useEffect(() => {
     if (isOpen) {
       setError(null)
-    }
-  }, [isOpen])
 
+      // If product is EQUIPO_BUCEO or TABLA_SURF, set to 1
+      if (productType === "EQUIPO_BUCEO" || productType === "TABLA_SURF") {
+        setFormData(prev => ({ ...prev, cantidadPersonas: 1 }))
+      }
+    }
+  }, [isOpen, productType])
+
+  // Check if cantidadPersonas field should be disabled
+  const isCantidadPersonasDisabled = productType === "EQUIPO_BUCEO" || productType === "TABLA_SURF"
+
+  // Check if cantidadPersonas field is for JetSki or Cuatriciclo (limited to 1-2 people)
+  const isLimitedToTwoPersonas = productType === "JETSKY" || productType === "CUATRICICLO"
+
+  // Determine the minimum and maximum values for cantidadPersonas
+  const minPersonas = 1
+  const maxPersonas = isLimitedToTwoPersonas ? 2 : 10
 
   console.log('PRODUCT ID', productoId);
-
+  console.log('PRODUCT TYPE', productType);
 
   // Get the selected turnos data based on IDs and sort by date/time
   const selectedTurnos = turnos.filter(turno => turnoIds.includes(turno.id))
@@ -114,7 +128,6 @@ export function ReservaModal({
     } else {
       // Multiple turnos case - group by date
       const turnosByDate = groupTurnosByDate()
-      const dateCount = Object.keys(turnosByDate).length
 
       return (
         <>
@@ -127,7 +140,7 @@ export function ReservaModal({
               <p className="text-blue-700 text-sm font-medium capitalize">{dateIndex === 0 ? "Fecha: " : "También: "}{formatDateTime(dateTurnos[0].fechaHora).shortDate}</p>
 
               <div className="ml-2">
-                {dateTurnos.map((turno, index) => {
+                {dateTurnos.map((turno) => {
                   const { time, endTime } = formatDateTime(turno.fechaHora)
                   return (
                     <p key={turno.id} className="text-blue-700 text-sm">
@@ -143,10 +156,27 @@ export function ReservaModal({
     }
   }
 
+  const validateForm = () => {
+    // For JetSky or CUATRICICLO, cantidadPersonas is mandatory and must be 1 or 2
+    if ((productType === "JETSKY" || productType === "CUATRICICLO") &&
+      (formData.cantidadPersonas < 1 || formData.cantidadPersonas > 2)) {
+      setError("Para JetSky o Cuatriciclo, la cantidad de personas debe ser 1 o 2")
+      return false
+    }
+
+    return true
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setError(null)
+
+    // Validate form before submission
+    if (!validateForm()) {
+      setLoading(false)
+      return
+    }
 
     try {
       const actualClienteId = clienteId || localStorage.getItem("clienteId") || "A"
@@ -237,16 +267,23 @@ export function ReservaModal({
             <div className="grid gap-2">
               <Label htmlFor="cantidadPersonas" className="text-blue-800">
                 Cantidad de Personas
+                {isLimitedToTwoPersonas && <span className="text-red-500">*</span>}
+                {isCantidadPersonasDisabled && <span className="text-sm text-gray-500 ml-2">(Fijo: 1 persona)</span>}
               </Label>
               <Input
                 id="cantidadPersonas"
                 type="number"
-                min="1"
-                max="10"
+                min={minPersonas}
+                max={maxPersonas}
                 value={formData.cantidadPersonas}
                 onChange={(e) => setFormData({ ...formData, cantidadPersonas: Number.parseInt(e.target.value) || 1 })}
-                className="border-blue-200"
+                className={`border-blue-200 ${isCantidadPersonasDisabled ? "bg-gray-100" : ""}`}
+                disabled={isCantidadPersonasDisabled}
+                required={isLimitedToTwoPersonas}
               />
+              {isLimitedToTwoPersonas && (
+                <p className="text-sm text-blue-600">Para este producto, debe especificar 1 o 2 personas</p>
+              )}
             </div>
 
             <div className="grid gap-2">

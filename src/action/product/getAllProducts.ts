@@ -7,7 +7,7 @@ export const getAvailableProducts = async () => {
     const products = await prisma.producto.findMany({
       where: {
         reservas: {
-          none: {},
+
         },
       },
     });

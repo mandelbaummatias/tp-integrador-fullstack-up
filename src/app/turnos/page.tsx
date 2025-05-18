@@ -20,6 +20,7 @@ import { useToast } from '../hooks/use-toast';
 export default function Turnos() {
   const searchParams = useSearchParams();
   const productoId = searchParams.get('productId') || '';
+  const productType = searchParams.get('productType') || '';
 
   const { toast } = useToast();
   const [turnos, setTurnos] = useState<Turno[]>([]);
@@ -147,6 +148,17 @@ export default function Turnos() {
     {} as Record<string, Turno[]>,
   );
 
+  // Helper function to get product type name for display
+  const getProductTypeName = (type: string) => {
+    switch (type) {
+      case "JETSKY": return "Moto Acuática";
+      case "CUATRICICLO": return "Cuatriciclo";
+      case "EQUIPO_BUCEO": return "Equipo de Buceo";
+      case "TABLA_SURF": return "Tabla de Surf";
+      default: return type;
+    }
+  };
+
   if (loading) {
     return <Skeleton />;
   }
@@ -162,9 +174,16 @@ export default function Turnos() {
           <h1 className="text-3xl font-bold text-blue-900 mb-2">Turnos Disponibles</h1>
           <p className="text-blue-700">Selecciona los horarios que deseas reservar</p>
           {productoId && (
-            <Badge className="mt-2 bg-blue-100 text-blue-800">
-              Producto seleccionado: {productoId}
-            </Badge>
+            <div className="mt-2 flex flex-wrap justify-center gap-2">
+              <Badge className="bg-blue-100 text-blue-800">
+                Producto: {productoId}
+              </Badge>
+              {productType && (
+                <Badge className="bg-green-100 text-green-800">
+                  Tipo: {getProductTypeName(productType)}
+                </Badge>
+              )}
+            </div>
           )}
         </header>
 
@@ -186,6 +205,12 @@ export default function Turnos() {
                 <li>Cada turno tiene una duración de 30 minutos</li>
                 <li>Puedes reservar hasta 3 turnos consecutivos</li>
                 <li>Selecciona los turnos con los checkboxes para reservar varios a la vez</li>
+                {(productType === "JETSKY" || productType === "CUATRICICLO") && (
+                  <li>Este producto permite hasta 2 personas por reserva</li>
+                )}
+                {(productType === "EQUIPO_BUCEO" || productType === "TABLA_SURF") && (
+                  <li>Este producto es de uso individual (1 persona)</li>
+                )}
               </ul>
             </div>
           </div>
@@ -292,6 +317,7 @@ export default function Turnos() {
         turnos={turnos}
         onReservaSuccess={handleReservaSuccess}
         productoId={productoId}
+        productType={productType}
       />
     </div>
   );

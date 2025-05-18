@@ -66,10 +66,10 @@ export default function Home() {
     }
   }
 
-  const handleReserve = (productId: string) => {
-    console.log("Reservando producto:", productId)
-    // Navegar a la página de turnos pasando el ID del producto como query parameter
-    router.push(`/turnos?productId=${productId}`)
+  const handleReserve = (product: Product) => {
+    console.log("Reservando producto:", product.id, "tipo:", product.tipo)
+    // Navegar a la página de turnos pasando el ID del producto y su tipo como query parameters
+    router.push(`/turnos?productId=${product.id}&productType=${product.tipo}`)
   }
 
   if (loading) {
@@ -121,11 +121,23 @@ export default function Home() {
                   <CardContent className="pt-6 pb-4 flex flex-col items-center">
                     <div className="mb-4 p-4 bg-blue-50 rounded-full">{getProductIcon(product.tipo)}</div>
                     <p className="text-2xl font-bold text-blue-900">${product.precio.toFixed(2)}</p>
+
+                    {/* Show capacity info based on product type */}
+                    {(product.tipo === "JETSKY" || product.tipo === "CUATRICICLO") && (
+                      <p className="text-sm text-blue-700 mt-2">
+                        Capacidad máxima: 2 personas
+                      </p>
+                    )}
+                    {(product.tipo === "EQUIPO_BUCEO" || product.tipo === "TABLA_SURF") && (
+                      <p className="text-sm text-blue-700 mt-2">
+                        Capacidad: 1 persona
+                      </p>
+                    )}
                   </CardContent>
                   <CardFooter className="bg-gradient-to-r from-blue-50 to-sky-50 pt-2">
                     <Button
                       className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-                      onClick={() => handleReserve(product.id)}
+                      onClick={() => handleReserve(product)}
                     >
                       Reservar
                     </Button>
