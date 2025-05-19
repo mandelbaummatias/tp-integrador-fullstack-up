@@ -40,7 +40,7 @@ export function validarExistenciaReserva(reserva: any) {
 // Validación de regla de cancelación basada en fecha
 export function validarReglaCancelacion(fechaTurno: Date) {
   const ahora = new Date();
-  const tiempoLimiteCancelacion = 24; // horas antes del turno
+  const tiempoLimiteCancelacion = 2; // horas antes del turno
 
   const fechaTurnoObj = new Date(fechaTurno);
   const diferenciaHoras = (fechaTurnoObj.getTime() - ahora.getTime()) / (1000 * 60 * 60);
