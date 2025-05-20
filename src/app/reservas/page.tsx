@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { useToast } from "../hooks/use-toast"
 import { getReservas } from "@/action/reserva/reservas"
-import { format, isValid, parseISO } from "date-fns"
+import { format, isValid } from "date-fns"
 import { AlertTriangle, Calendar, Clock, CreditCard, Loader2, Package, User } from "lucide-react"
 import { Alert, AlertDescription } from "../components/ui/alert"
 import { Tabs, TabsList, TabsTrigger } from "../components/ui/tabs"
@@ -14,8 +14,6 @@ import { Badge } from "../components/ui/badge"
 import { ConfirmationModal } from "../components/ui/modal/confirmation-modal"
 import { PaymentModal } from "../components/ui/modal/payment-modal"
 import { es } from "date-fns/locale/es"
-
-
 
 // Tipos basados en el esquema de Prisma
 type EstadoReserva = "PENDIENTE_PAGO" | "PAGADA" | "CANCELADA"
@@ -58,6 +56,7 @@ export default function ReservasPage() {
   const [error, setError] = useState<string | null>(null)
   const [selectedReservas, setSelectedReservas] = useState<string[]>([])
   const [activeTab, setActiveTab] = useState<string>("todas")
+  const [processingIds, setProcessingIds] = useState<string[]>([])
 
   // Estados para modales
   const [cancelModalOpen, setCancelModalOpen] = useState(false)
@@ -104,8 +103,6 @@ export default function ReservasPage() {
     // Limpiar selecciones al cambiar de tab
     setSelectedReservas([])
   }, [activeTab, reservas])
-
-
 
   const formatDateTime = (input: string | Date) => {
     const date = typeof input === "string" ? new Date(input) : input
@@ -206,59 +203,101 @@ export default function ReservasPage() {
 
   const confirmCancel = async () => {
     try {
-      // Aquí implementarías la lógica para cancelar reservas
       const idsToCancel = isMultipleAction ? selectedReservas : [selectedForAction!]
+      setProcessingIds(idsToCancel)
 
-      // Simulación de cancelación exitosa
+      // Procesar cada reserva secuencialmente
+      for (const reservaId of idsToCancel) {
+        const response = await fetch(`/api/cancelarReserva/${reservaId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Error al cancelar la reserva');
+        }
+      }
+
+      // Actualizar el estado local después de procesar todas las reservas
+      const updatedReservas = reservas.map((reserva) =>
+        idsToCancel.includes(reserva.id) ? { ...reserva, estado: "CANCELADA" as EstadoReserva } : reserva
+      );
+
+      setReservas(updatedReservas);
+      setSelectedReservas([]);
+
       toast({
         title: "Reservas canceladas",
         description: `Se han cancelado ${idsToCancel.length} reserva(s) exitosamente`,
         variant: "default",
-      })
-
-      // Actualizar el estado local (en una implementación real, recargarías los datos)
-      const updatedReservas = reservas.map((reserva) =>
-        idsToCancel.includes(reserva.id) ? { ...reserva, estado: "CANCELADA" as EstadoReserva } : reserva,
-      )
-      setReservas(updatedReservas)
-      setSelectedReservas([])
+      });
     } catch (error) {
       toast({
         title: "Error",
-        description: "No se pudieron cancelar las reservas",
+        description: error instanceof Error ? error.message : "No se pudieron cancelar las reservas",
         variant: "destructive",
-      })
+      });
     } finally {
-      setCancelModalOpen(false)
+      setProcessingIds([]);
+      setCancelModalOpen(false);
     }
   }
 
   const confirmPayment = async (paymentDetails: any) => {
     try {
-      // Aquí implementarías la lógica para procesar el pago
       const idsToPay = isMultipleAction ? selectedReservas : [selectedForAction!]
+      setProcessingIds(idsToPay)
 
-      // Simulación de pago exitoso
+      // Procesar cada reserva secuencialmente
+      for (const reservaId of idsToPay) {
+        const response = await fetch(`/api/pagarReserva/${reservaId}/`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            medioPago: paymentDetails.medioPago,
+            tipoMoneda: paymentDetails.tipoMoneda,
+            comprobante: paymentDetails.comprobante || null
+          })
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Error al procesar el pago');
+        }
+      }
+
+      // Actualizar el estado local después de procesar todos los pagos
+      const updatedReservas = reservas.map((reserva) =>
+        idsToPay.includes(reserva.id) ? {
+          ...reserva,
+          estado: "PAGADA" as EstadoReserva,
+          medioPago: paymentDetails.medioPago,
+          tipoMoneda: paymentDetails.tipoMoneda
+        } : reserva
+      );
+
+      setReservas(updatedReservas);
+      setSelectedReservas([]);
+
       toast({
         title: "Pago procesado",
         description: `Se ha procesado el pago de ${idsToPay.length} reserva(s) exitosamente`,
         variant: "default",
-      })
-
-      // Actualizar el estado local (en una implementación real, recargarías los datos)
-      const updatedReservas = reservas.map((reserva) =>
-        idsToPay.includes(reserva.id) ? { ...reserva, estado: "PAGADA" as EstadoReserva } : reserva,
-      )
-      setReservas(updatedReservas)
-      setSelectedReservas([])
+      });
     } catch (error) {
       toast({
         title: "Error",
-        description: "No se pudo procesar el pago",
+        description: error instanceof Error ? error.message : "No se pudo procesar el pago",
         variant: "destructive",
-      })
+      });
     } finally {
-      setPaymentModalOpen(false)
+      setProcessingIds([]);
+      setPaymentModalOpen(false);
     }
   }
 
@@ -343,6 +382,7 @@ export default function ReservasPage() {
               const { date, time } = formatDateTime(reserva.turno.fechaHora)
               const isPendiente = reserva.estado === "PENDIENTE_PAGO"
               const isCancelada = reserva.estado === "CANCELADA"
+              const isProcessing = processingIds.includes(reserva.id)
 
               return (
                 <Card
@@ -361,8 +401,8 @@ export default function ReservasPage() {
                           id={`check-${reserva.id}`}
                           checked={selectedReservas.includes(reserva.id)}
                           onCheckedChange={(checked) => handleCheckboxChange(reserva.id, checked === true)}
-                          disabled={isCancelada}
-                          className={isCancelada ? "opacity-50" : ""}
+                          disabled={isCancelada || isProcessing}
+                          className={isCancelada || isProcessing ? "opacity-50" : ""}
                         />
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
@@ -414,8 +454,16 @@ export default function ReservasPage() {
                           <Button
                             onClick={() => handlePayReserva(reserva.id)}
                             className="bg-green-600 hover:bg-green-700"
+                            disabled={isProcessing}
                           >
-                            Pagar
+                            {isProcessing ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Procesando...
+                              </>
+                            ) : (
+                              "Pagar"
+                            )}
                           </Button>
                         )}
                         {!isCancelada && (
@@ -423,8 +471,16 @@ export default function ReservasPage() {
                             onClick={() => handleCancelReserva(reserva.id)}
                             variant="outline"
                             className="border-red-300 text-red-700 hover:bg-red-50"
+                            disabled={isProcessing}
                           >
-                            Cancelar
+                            {isProcessing ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Procesando...
+                              </>
+                            ) : (
+                              "Cancelar"
+                            )}
                           </Button>
                         )}
                       </div>
