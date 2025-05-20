@@ -9,7 +9,6 @@ import { format, parseISO } from "date-fns"
 import { es } from "date-fns/locale"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "../dialog"
 import { Label } from "../label"
-import { RadioGroup, RadioGroupItem } from "../radio-group"
 import { Input } from "../input"
 import { Checkbox } from "../checkbox"
 import { Button } from "../button"
@@ -57,7 +56,6 @@ interface PaymentModalProps {
 export function PaymentModal({ isOpen, onClose, onConfirm, reservas }: PaymentModalProps) {
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
-    medioPago: "EFECTIVO" as MedioPago,
     aplicarDescuento: false,
     porcentajeDescuento: 10,
     numeroReferencia: "",
@@ -83,8 +81,6 @@ export function PaymentModal({ isOpen, onClose, onConfirm, reservas }: PaymentMo
 
     try {
       await onConfirm({
-        reservaIds: reservas.map((r) => r.id),
-        medioPago: formData.medioPago,
         aplicoDescuento: formData.aplicarDescuento,
         porcentajeDescuento: formData.aplicarDescuento ? formData.porcentajeDescuento : 0,
         numeroReferencia: formData.numeroReferencia,
@@ -94,6 +90,9 @@ export function PaymentModal({ isOpen, onClose, onConfirm, reservas }: PaymentMo
       setLoading(false)
     }
   }
+
+  // Determinar si hay al menos una reserva con transferencia
+  const hayTransferencia = reservas.some(r => r.medioPago === "TRANSFERENCIA")
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -118,37 +117,21 @@ export function PaymentModal({ isOpen, onClose, onConfirm, reservas }: PaymentMo
                     <p className="text-blue-600">Cliente: {reserva.cliente.nombre}</p>
                     <p className="text-blue-600">Fecha: {formatDateTime(reserva.turno.fechaHora)}</p>
                     <p className="text-blue-600">Precio: ${reserva.producto.precio.toFixed(2)}</p>
+                    <p className="text-blue-600">
+                      Método de pago: {reserva.medioPago === "EFECTIVO" ? "Efectivo" : "Transferencia"}
+                    </p>
+                    <p className="text-blue-600">
+                      Moneda: {reserva.tipoMoneda === "MONEDA_LOCAL" ? "Local" : "Extranjera"}
+                    </p>
                   </div>
                 ))}
               </div>
             )}
 
-            <div className="grid gap-2">
-              <Label className="text-blue-800">Medio de Pago</Label>
-              <RadioGroup
-                value={formData.medioPago}
-                onValueChange={(value) => setFormData({ ...formData, medioPago: value as MedioPago })}
-                className="flex flex-col space-y-1"
-              >
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="EFECTIVO" id="efectivo-pago" />
-                  <Label htmlFor="efectivo-pago" className="cursor-pointer">
-                    Efectivo
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="TRANSFERENCIA" id="transferencia-pago" />
-                  <Label htmlFor="transferencia-pago" className="cursor-pointer">
-                    Transferencia
-                  </Label>
-                </div>
-              </RadioGroup>
-            </div>
-
-            {formData.medioPago === "TRANSFERENCIA" && (
+            {hayTransferencia && (
               <div className="grid gap-2">
                 <Label htmlFor="numeroReferencia" className="text-blue-800">
-                  Número de Referencia
+                  Número de Referencia (para transferencias)
                 </Label>
                 <Input
                   id="numeroReferencia"

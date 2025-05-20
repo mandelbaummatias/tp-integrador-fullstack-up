@@ -183,11 +183,7 @@ export default function ReservasPage() {
     setCancelModalOpen(true)
   }
 
-  const handlePayReserva = (reservaId: string) => {
-    setSelectedForAction(reservaId)
-    setIsMultipleAction(false)
-    setPaymentModalOpen(true)
-  }
+
 
   const handleCancelSelected = () => {
     if (selectedReservas.length === 0) return
@@ -195,11 +191,20 @@ export default function ReservasPage() {
     setCancelModalOpen(true)
   }
 
+
+
+  const handlePayReserva = (reservaId: string) => {
+    setSelectedForAction(reservaId)
+    setIsMultipleAction(false)
+    setPaymentModalOpen(true)
+  }
+
   const handlePaySelected = () => {
     if (selectedReservas.length === 0) return
     setIsMultipleAction(true)
     setPaymentModalOpen(true)
   }
+
 
   const confirmCancel = async () => {
     try {
@@ -245,39 +250,35 @@ export default function ReservasPage() {
       setCancelModalOpen(false);
     }
   }
-
   const confirmPayment = async (paymentDetails: any) => {
     try {
       const idsToPay = isMultipleAction ? selectedReservas : [selectedForAction!]
       setProcessingIds(idsToPay)
 
-      // Procesar cada reserva secuencialmente
-      for (const reservaId of idsToPay) {
-        const response = await fetch(`/api/pagarReserva/${reservaId}/`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            medioPago: paymentDetails.medioPago,
-            tipoMoneda: paymentDetails.tipoMoneda,
-            comprobante: paymentDetails.comprobante || null
-          })
-        });
+      // Instead of processing each reservation individually, send all IDs to the endpoint
+      const response = await fetch('/api/pagarReservas', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          reservasIds: idsToPay,
+          // aplicoDescuento: paymentDetails.aplicoDescuento,
+          // porcentajeDescuento: paymentDetails.porcentajeDescuento,
+          // comprobante: paymentDetails.numeroReferencia || null
+        })
+      });
 
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || 'Error al procesar el pago');
-        }
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al procesar el pago');
       }
 
-      // Actualizar el estado local después de procesar todos los pagos
+      // Update the local state after processing all payments
       const updatedReservas = reservas.map((reserva) =>
         idsToPay.includes(reserva.id) ? {
           ...reserva,
           estado: "PAGADA" as EstadoReserva,
-          medioPago: paymentDetails.medioPago,
-          tipoMoneda: paymentDetails.tipoMoneda
         } : reserva
       );
 
