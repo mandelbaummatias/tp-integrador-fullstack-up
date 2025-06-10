@@ -68,7 +68,7 @@ export default function Home() {
 
   const handleReserve = (product: Product) => {
     console.log("Reservando producto:", product.id, "tipo:", product.tipo)
-    // Navegar a la página de turnos pasando el ID del producto y su tipo como query parameters
+
     router.push(`/turnos?productId=${product.id}&productType=${product.tipo}`)
   }
 
@@ -122,7 +122,7 @@ export default function Home() {
                     <div className="mb-4 p-4 bg-blue-50 rounded-full">{getProductIcon(product.tipo)}</div>
                     <p className="text-2xl font-bold text-blue-900">${product.precio.toFixed(2)}</p>
 
-                    {/* Show capacity info based on product type */}
+                    { }
                     {(product.tipo === "JETSKY" || product.tipo === "CUATRICICLO") && (
                       <p className="text-sm text-blue-700 mt-2">
                         Capacidad máxima: 2 personas

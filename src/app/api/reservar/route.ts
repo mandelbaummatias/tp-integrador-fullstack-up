@@ -17,21 +17,21 @@ export async function POST(req: NextRequest) {
   console.log('[API] Iniciando POST en /api/reservar');
 
   try {
-    // Parse request body and log for debugging
+
     const body = await req.json();
     console.log('[API] Datos recibidos:', JSON.stringify(body, null, 2));
 
     const {
       clienteId,
       productoId,
-      turnoIds, // Changed to turnoIds to indicate it's an array
+      turnoIds,
       cantidadPersonas,
       medioPago,
       tipoMoneda,
       incluyeSeguro
     } = body;
 
-    // Validate required fields
+
     if (!clienteId || !productoId || !turnoIds || !Array.isArray(turnoIds) || turnoIds.length === 0) {
       console.log("IMPRIMO turnoIds");
 
@@ -48,31 +48,31 @@ export async function POST(req: NextRequest) {
       }, { status: 400 });
     }
 
-    // Validate medioPago
+
     const validacionMedioPagoInput = validarMedioPagoInput(medioPago);
     if (validacionMedioPagoInput) {
       console.error('[API] Error en validación de medio de pago:', medioPago);
       return validacionMedioPagoInput;
     }
 
-    // Validate tipoMoneda
+
     const validacionTipoMonedaInput = validarTipoMonedaInput(tipoMoneda);
     if (validacionTipoMonedaInput) {
       console.error('[API] Error en validación de tipo de moneda:', tipoMoneda);
       return validacionTipoMonedaInput;
     }
 
-    // Validate payment options
+
     const validacionPago = validarOpcionesPago(medioPago, tipoMoneda);
     if (validacionPago) {
       console.error('[API] Error en validación de opciones de pago:', { medioPago, tipoMoneda });
       return validacionPago;
     }
 
-    // Validate basic data and fetch entities outside the loop
+
     let cliente, producto;
     try {
-      const validacionDatosBasicos = await validarDatosBasicos(clienteId, productoId, turnoIds[0]); // Use the first turnoId for basic data validation
+      const validacionDatosBasicos = await validarDatosBasicos(clienteId, productoId, turnoIds[0]);
       if (validacionDatosBasicos) {
         console.error('[API] Error en validación de datos básicos');
         return validacionDatosBasicos;
@@ -102,7 +102,7 @@ export async function POST(req: NextRequest) {
       }, { status: 400 });
     }
 
-    // Validate business rules (using the first turnoId for now, adjust if needed for multiple turnos)
+
     try {
       const validacionReglas = await validarReglasNegocio(clienteId, turnoIds[0], medioPago);
       if (validacionReglas) {
@@ -117,7 +117,7 @@ export async function POST(req: NextRequest) {
       }, { status: 400 });
     }
 
-    // Get security devices (assuming they are the same for all turnos in the same product)
+
     console.log('[API] Obteniendo dispositivos de seguridad');
     let resultadoDispositivos;
     try {
@@ -140,12 +140,12 @@ export async function POST(req: NextRequest) {
     const dispositivos = resultadoDispositivos.dispositivos;
     const reservasCreadas: any = [];
 
-    // Create reservations and update turnos in a transaction
+
     console.log('[API] Iniciando transacción para crear reservas');
     try {
       await prisma.$transaction(async (tx) => {
         for (const turnoId of turnoIds) {
-          // Fetch the turno inside the loop to validate its existence and capacity
+
           const turno = await tx.turno.findUnique({ where: { id: turnoId } });
 
           if (!turno) {
@@ -153,14 +153,14 @@ export async function POST(req: NextRequest) {
             throw new Error(`Turno con ID ${turnoId} no encontrado.`);
           }
 
-          // Validate entities for each turno
+
           const validacionEntidadesTurno = validarEntidades(cliente, producto, turno, cantidadPersonas);
           if (validacionEntidadesTurno) {
             console.error(`[API] Error en validación de entidades para el turno ${turnoId}`);
             throw new Error(validacionEntidadesTurno.error);
           }
 
-          // Create new reservation
+
           const nuevaReserva = await tx.reserva.create({
             data: {
               clienteId,
@@ -177,7 +177,7 @@ export async function POST(req: NextRequest) {
           console.log('[API] Reserva creada:', nuevaReserva.id, 'para el turno:', turnoId);
           reservasCreadas.push(nuevaReserva);
 
-          // Update turn status
+
           await tx.turno.update({
             where: { id: turnoId },
             data: { estado: EstadoTurno.RESERVADO }
@@ -185,7 +185,7 @@ export async function POST(req: NextRequest) {
 
           console.log('[API] Turno', turnoId, 'actualizado a RESERVADO');
 
-          // Create security device relationships
+
           if (dispositivos && dispositivos.length > 0) {
             console.log('[API] Asociando dispositivos de seguridad para la reserva:', nuevaReserva.id);
             for (const dispositivo of dispositivos) {

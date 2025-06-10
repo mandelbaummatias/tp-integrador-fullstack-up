@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-// Validación para ID de reserva
+
 export function validarReservaId(reservaId: string) {
   if (!reservaId || typeof reservaId !== 'string' || reservaId.trim() === '') {
     return NextResponse.json(
@@ -11,7 +11,7 @@ export function validarReservaId(reservaId: string) {
   return null;
 }
 
-// Validación de existencia de reserva
+
 export function validarExistenciaReserva(reserva: any) {
   if (!reserva) {
     return NextResponse.json(
@@ -37,10 +37,10 @@ export function validarExistenciaReserva(reserva: any) {
   return null;
 }
 
-// Validación de regla de cancelación basada en fecha
+
 export function validarReglaCancelacion(fechaTurno: Date) {
   const ahora = new Date();
-  const tiempoLimiteCancelacion = 2; // horas antes del turno
+  const tiempoLimiteCancelacion = 2;
 
   const fechaTurnoObj = new Date(fechaTurno);
   const diferenciaHoras = (fechaTurnoObj.getTime() - ahora.getTime()) / (1000 * 60 * 60);

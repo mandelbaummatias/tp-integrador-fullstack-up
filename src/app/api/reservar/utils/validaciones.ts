@@ -94,7 +94,7 @@ const validarReglasNegocio = async (
   turnoId: string,
   medioPago?: MedioPago,
 ): Promise<NextResponse | null> => {
-  // Obtener el turno que se quiere reservar
+
   const turno = await prisma.turno.findUnique({
     where: { id: turnoId }
   });
@@ -105,14 +105,14 @@ const validarReglasNegocio = async (
 
   const ahora = obtenerHoraActualLocal();
 
-  // No permitir reservar turnos pasados
+
   if (turno.fechaHora < ahora) {
     return NextResponse.json({
       error: 'No se pueden reservar turnos en fechas u horas pasadas.'
     }, { status: 400 });
   }
 
-  // Validar regla de efectivo con 2 horas de anticipación
+
   if (medioPago == MedioPago.EFECTIVO) {
     const dosHorasAntes = new Date(turno.fechaHora.getTime() - 2 * 60 * 60 * 1000);
 
@@ -125,7 +125,7 @@ const validarReglasNegocio = async (
 
   const fechaTurno = turno.fechaHora;
 
-  // Obtener todas las reservas activas del cliente
+
   const reservasCliente = await prisma.reserva.findMany({
     where: {
       clienteId,
@@ -138,7 +138,7 @@ const validarReglasNegocio = async (
     }
   });
 
-  // Verificar si el turno que se intenta reservar ya existe para este cliente
+
   const turnoYaReservado = reservasCliente.some(
     reserva => reserva.turnoId === turnoId
   );
@@ -149,29 +149,29 @@ const validarReglasNegocio = async (
     }, { status: 400 });
   }
 
-  // Extraer las fechas de los turnos del cliente y agregar la nueva fecha del turno a reservar
+
   const fechasTurnos = reservasCliente.map(reserva => reserva.turno.fechaHora);
 
-  // Agregar la fecha del nuevo turno que se está intentando reservar
+
   const todasLasFechas = [...fechasTurnos, fechaTurno];
 
-  // Ordenar todas las fechas cronológicamente
+
   todasLasFechas.sort((a, b) => a.getTime() - b.getTime());
 
-  // Buscar secuencias de 4 o más turnos consecutivos
+
   let consecutivos = 1;
 
   for (let i = 1; i < todasLasFechas.length; i++) {
     const fechaActual = todasLasFechas[i];
     const fechaAnterior = todasLasFechas[i - 1];
 
-    // Verificar si son consecutivos (30 minutos de diferencia)
+
     const diffMinutos = (fechaActual.getTime() - fechaAnterior.getTime()) / (1000 * 60);
 
     if (diffMinutos === 30) {
       consecutivos++;
 
-      // Si encontramos 4 o más turnos consecutivos y uno de ellos es el nuevo turno
+
       if (consecutivos >= 4 && (
         fechaActual.getTime() === fechaTurno.getTime() ||
         fechaAnterior.getTime() === fechaTurno.getTime() ||
@@ -183,12 +183,12 @@ const validarReglasNegocio = async (
         }, { status: 400 });
       }
     } else {
-      // Resetear contador si no son consecutivos
+
       consecutivos = 1;
     }
   }
 
-  // Validar ventana de anticipación máxima de 48 horas
+
   const diferenciaHoras = (fechaTurno.getTime() - ahora.getTime()) / (1000 * 60 * 60);
 
   if (diferenciaHoras > 48) {

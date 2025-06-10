@@ -1,5 +1,5 @@
 export interface Turno {
   id: string;
-  fechaHora: string; // ISO string
+  fechaHora: string;
   estado: 'DISPONIBLE' | 'RESERVADO' | 'CANCELADO';
 }

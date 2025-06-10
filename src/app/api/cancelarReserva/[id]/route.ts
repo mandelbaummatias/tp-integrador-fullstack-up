@@ -15,11 +15,11 @@ export async function PUT(
     const awaitedParams = await params;
     const reservaId = awaitedParams.id;
 
-    // Validar que el ID de la reserva sea válido
+
     const errorReservaId = validarReservaId(reservaId);
     if (errorReservaId) return errorReservaId;
 
-    // Buscar la reserva con todas las relaciones necesarias
+
     const reserva = await prisma.reserva.findUnique({
       where: { id: reservaId },
       include: {
@@ -30,23 +30,23 @@ export async function PUT(
       }
     });
 
-    // Validar que la reserva exista
+
     const errorReserva = validarExistenciaReserva(reserva);
     if (errorReserva) return errorReserva;
 
-    // Validar regla de cancelación basada en la fecha del turno
+
     const errorReglaCancelacion = validarReglaCancelacion(reserva!.turno!.fechaHora);
     if (errorReglaCancelacion) return errorReglaCancelacion;
 
-    // Realizar todas las operaciones en una transacción
+
     const resultado = await prisma.$transaction(async (tx) => {
-      // Actualizar el estado de la reserva a CANCELADA
+
       const reservaActualizada = await tx.reserva.update({
         where: { id: reservaId },
         data: { estado: EstadoReserva.CANCELADA }
       });
 
-      // Actualizar el estado del turno a DISPONIBLE
+
       const turnoActualizado = await tx.turno.update({
         where: { id: reserva!.turnoId },
         data: { estado: EstadoTurno.DISPONIBLE }
@@ -54,7 +54,7 @@ export async function PUT(
 
       let saldoClienteActualizado = null;
 
-      // Si la reserva estaba pagada, devolver el saldo al cliente
+
       if (reserva!.estado === EstadoReserva.PAGADA) {
         const pago = reserva!.pagos && reserva!.pagos.length > 0
           ? reserva!.pagos[0]
@@ -72,12 +72,12 @@ export async function PUT(
         const tipoMoneda = pago.moneda;
         const clienteId = reserva!.clienteId;
 
-        // Buscar el saldo existente del cliente
+
         const saldoExistente = await tx.saldoCliente.findUnique({
           where: { clienteId }
         });
 
-        // Actualizar o crear saldo del cliente según corresponda
+
         if (saldoExistente) {
           if (tipoMoneda === TipoMoneda.MONEDA_LOCAL) {
             saldoClienteActualizado = await tx.saldoCliente.update({

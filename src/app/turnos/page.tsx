@@ -35,7 +35,7 @@ export default function Turnos() {
   useEffect(() => {
     loadTurnos();
     const horaActual = obtenerHoraActualLocal();
-    horaActual.setHours(horaActual.getHours() + 3); // Adds 3 hours
+    horaActual.setHours(horaActual.getHours() + 3);
     setCurrentDateTime(horaActual);
     console.log('Hora actual:', horaActual);
   }, []);
@@ -48,7 +48,7 @@ export default function Turnos() {
       console.log(result);
 
       if (result?.ok && result.turns) {
-        // Asegúrate de que la propiedad fechaHora sea una string ISO para el cliente
+
         setTurnos(result.turns.map(turno => ({ ...turno, fechaHora: turno.fechaHora.toISOString() })));
       } else {
         setError(result?.message || 'Error al cargar los turnos disponibles');
@@ -61,17 +61,17 @@ export default function Turnos() {
     }
   }
 
-  // Function to check if a turno has already started or is starting now
+
   const isTurnoExpired = (turno: Turno) => {
     const turnoDateTime = new Date(turno.fechaHora);
     return turnoDateTime <= currentDateTime;
   };
 
-  // Function to handle successful reservation
+
   const handleReservaSuccess = (reservedTurnoIds: string[]) => {
     setReservaExitosa(true);
 
-    // ✅ Show toast notification here
+
     toast({
       title: 'Reserva completada',
       description: '¡Tu reserva se ha realizado con éxito!',
@@ -89,26 +89,26 @@ export default function Turnos() {
     setSelectedTurnos([]);
   };
 
-  // Función que identifica grupos de turnos consecutivos entre los seleccionados
+
   const wouldViolateConsecutiveRule = (turnoId: string) => {
     if (selectedTurnos.includes(turnoId)) return false;
 
     const turnoToCheck = turnos.find(t => t.id === turnoId);
     if (!turnoToCheck) return false;
 
-    // Check if the turno has already started
+
     if (isTurnoExpired(turnoToCheck)) return true;
 
-    // Simular la selección con el nuevo turno incluido
+
     const simulatedSelection = [...selectedTurnos, turnoId];
 
-    // Obtener objetos Turno y ordenarlos por fecha
+
     const selectedTurnosObjects = simulatedSelection
       .map(id => turnos.find(t => t.id === id))
       .filter((t): t is Turno => !!t)
       .sort((a, b) => new Date(a.fechaHora).getTime() - new Date(b.fechaHora).getTime());
 
-    // Revisar todos los grupos consecutivos
+
     let groupSize = 1;
     for (let i = 1; i < selectedTurnosObjects.length; i++) {
       const prev = new Date(selectedTurnosObjects[i - 1].fechaHora);
@@ -117,9 +117,9 @@ export default function Turnos() {
 
       if (diff === 30) {
         groupSize++;
-        if (groupSize > 3) return true; // violación detectada
+        if (groupSize > 3) return true;
       } else {
-        groupSize = 1; // reiniciar si no son consecutivos
+        groupSize = 1;
       }
     }
 
@@ -148,7 +148,7 @@ export default function Turnos() {
   };
 
   const handleReserveSelected = () => {
-    // Check if any selected turno has expired
+
     const expiredTurnos = selectedTurnos.filter(id => {
       const turno = turnos.find(t => t.id === id);
       return turno && isTurnoExpired(turno);
@@ -161,7 +161,7 @@ export default function Turnos() {
         variant: 'destructive',
         duration: 5000,
       });
-      // Remove expired turnos from selection
+
       setSelectedTurnos(selectedTurnos.filter(id => !expiredTurnos.includes(id)));
       return;
     }
@@ -181,7 +181,7 @@ export default function Turnos() {
       return;
     }
 
-    setSelectedTurnos([turno.id]); // ← Esto reemplaza todos los turnos seleccionados con uno solo
+    setSelectedTurnos([turno.id]);
     setReservaModalOpen(true);
   };
 
@@ -190,7 +190,7 @@ export default function Turnos() {
     setSelectedTurnos([]);
   };
 
-  // Agrupar turnos por fecha
+
   const turnosByDate = turnos.reduce(
     (acc, turno) => {
       const { date } = formatDateTime(turno.fechaHora);
@@ -203,7 +203,7 @@ export default function Turnos() {
     {} as Record<string, Turno[]>,
   );
 
-  // Helper function to get product type name for display
+
   const getProductTypeName = (type: string) => {
     switch (type) {
       case "JETSKY": return "Moto Acuática";
@@ -306,10 +306,10 @@ export default function Turnos() {
                     <Card
                       key={turno.id}
                       className={`border ${selectedTurnos.includes(turno.id)
-                          ? 'border-blue-500 bg-blue-50'
-                          : isExpired
-                            ? 'border-red-200 bg-red-50'
-                            : 'border-gray-200'
+                        ? 'border-blue-500 bg-blue-50'
+                        : isExpired
+                          ? 'border-red-200 bg-red-50'
+                          : 'border-gray-200'
                         } ${isExpired ? 'opacity-60' : 'hover:shadow-md'} transition-all duration-200`}
                     >
                       <CardContent className="p-4">

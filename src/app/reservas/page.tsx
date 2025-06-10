@@ -15,7 +15,7 @@ import { ConfirmationModal } from "../components/ui/modal/confirmation-modal"
 import { PaymentModal } from "../components/ui/modal/payment-modal"
 import { es } from "date-fns/locale/es"
 
-// Tipos basados en el esquema de Prisma
+
 type EstadoReserva = "PENDIENTE_PAGO" | "PAGADA" | "CANCELADA"
 type MedioPago = "EFECTIVO" | "TRANSFERENCIA"
 type TipoMoneda = "MONEDA_LOCAL" | "MONEDA_EXTRANJERA"
@@ -31,7 +31,7 @@ interface Reserva {
   incluyeSeguro: boolean
   turnoId: string
   productoId: string
-  // Relaciones expandidas
+
   cliente: {
     id: string
     nombre: string
@@ -68,7 +68,7 @@ export default function ReservasPage() {
   const [activeTab, setActiveTab] = useState<string>("todas")
   const [processingIds, setProcessingIds] = useState<string[]>([])
 
-  // Estados para modales
+
   const [cancelModalOpen, setCancelModalOpen] = useState(false)
   const [paymentModalOpen, setPaymentModalOpen] = useState(false)
   const [selectedForAction, setSelectedForAction] = useState<string | null>(null)
@@ -112,7 +112,7 @@ export default function ReservasPage() {
         ),
       )
     }
-    // Limpiar selecciones al cambiar de tab
+
     setSelectedReservas([])
   }, [activeTab, reservas])
 
@@ -122,17 +122,17 @@ export default function ReservasPage() {
 
 
 
-    // Check if there are multiple reservations in the system
+
     const hasMultipleReservations = reservas.length > 1
 
-    // Apply insurance charge (15%)
+
     const insuranceCharge = reserva.incluyeSeguro ? originalPrice * 0.15 : 0
     const subtotalWithInsurance = originalPrice + insuranceCharge
     finalPrice = subtotalWithInsurance
 
-    // Apply multi-reservation discount (10%) if there are multiple reservations
+
     const multiReservationDiscount = hasMultipleReservations ? subtotalWithInsurance * 0.10 : 0
-    //  finalPrice = subtotalWithInsurance - multiReservationDiscount
+
 
 
     finalPrice = hasMultipleReservations ? subtotalWithInsurance * 0.90 : subtotalWithInsurance
@@ -153,7 +153,7 @@ export default function ReservasPage() {
       .map(id => reservas.find(r => r.id === id))
       .filter(Boolean) as Reserva[]
 
-    // Check if there are multiple reservations in the system (not just selected)
+
     const hasMultipleReservations = reservas.length > 1
 
     let totalOriginal = 0
@@ -325,14 +325,14 @@ export default function ReservasPage() {
     setCancelModalOpen(true)
   }
 
-  const [finalPriceForModal, setFinalPriceForModal] = useState(0); // Add this state
+  const [finalPriceForModal, setFinalPriceForModal] = useState(0);
 
   const handlePayReserva = (reservaId: string) => {
     setSelectedForAction(reservaId);
     setIsMultipleAction(false);
     const reserva = reservas.find(r => r.id === reservaId);
     if (reserva) {
-      setFinalPriceForModal(calculatePrice(reserva).finalPrice); // Calculate and set the price
+      setFinalPriceForModal(calculatePrice(reserva).finalPrice);
     }
     setPaymentModalOpen(true);
   };
@@ -340,7 +340,7 @@ export default function ReservasPage() {
   const handlePaySelected = () => {
     if (selectedReservas.length === 0) return;
     setIsMultipleAction(true);
-    setFinalPriceForModal(calculateSelectedTotal().finalPrice); // Calculate and set the price
+    setFinalPriceForModal(calculateSelectedTotal().finalPrice);
     setPaymentModalOpen(true);
   };
 
@@ -349,7 +349,7 @@ export default function ReservasPage() {
       const idsToCancel = isMultipleAction ? selectedReservas : [selectedForAction!]
       setProcessingIds(idsToCancel)
 
-      // Procesar cada reserva secuencialmente
+
       for (const reservaId of idsToCancel) {
         const response = await fetch(`/api/cancelarReserva/${reservaId}`, {
           method: 'PUT',
@@ -364,7 +364,7 @@ export default function ReservasPage() {
         }
       }
 
-      // Actualizar el estado local después de procesar todas las reservas
+
       const updatedReservas = reservas.map((reserva) =>
         idsToCancel.includes(reserva.id) ? { ...reserva, estado: "CANCELADA" as EstadoReserva } : reserva
       );
@@ -394,7 +394,7 @@ export default function ReservasPage() {
       const idsToPay = isMultipleAction ? selectedReservas : [selectedForAction!]
       setProcessingIds(idsToPay)
 
-      // Instead of processing each reservation individually, send all IDs to the endpoint
+
       const response = await fetch('/api/pagarReservas', {
         method: 'POST',
         headers: {
@@ -402,9 +402,9 @@ export default function ReservasPage() {
         },
         body: JSON.stringify({
           reservasIds: idsToPay,
-          // aplicoDescuento: paymentDetails.aplicoDescuento,
-          // porcentajeDescuento: paymentDetails.porcentajeDescuento,
-          // comprobante: paymentDetails.numeroReferencia || null
+
+
+
         })
       });
 
@@ -413,7 +413,7 @@ export default function ReservasPage() {
         throw new Error(errorData.error || 'Error al procesar el pago');
       }
 
-      // Update the local state after processing all payments
+
       const updatedReservas = reservas.map((reserva) =>
         idsToPay.includes(reserva.id) ? {
           ...reserva,
@@ -665,7 +665,7 @@ export default function ReservasPage() {
         )}
       </div>
 
-      {/* Modal de Confirmación para Cancelar */}
+      { }
       <ConfirmationModal
         isOpen={cancelModalOpen}
         onClose={() => setCancelModalOpen(false)}
@@ -676,13 +676,13 @@ export default function ReservasPage() {
         cancelText="No, Volver"
       />
 
-      {/* Modal de Pago */}
+      { }
       <PaymentModal
         isOpen={paymentModalOpen}
         onClose={() => setPaymentModalOpen(false)}
         onConfirm={confirmPayment}
         reservas={isMultipleAction ? selectedReservas.map(id => reservas.find(r => r.id === id)).filter(Boolean) as Reserva[] : selectedForAction ? [reservas.find(r => r.id === selectedForAction)!] : []}
-        finalPrice={finalPriceForModal} // Pass the calculated price
+        finalPrice={finalPriceForModal}
       />
     </div>
   )

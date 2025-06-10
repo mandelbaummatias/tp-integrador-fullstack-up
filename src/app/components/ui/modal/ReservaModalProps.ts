@@ -8,6 +8,6 @@ export interface ReservaModalProps {
   clienteId?: string
   productoId?: string,
   productType?: string,
-  turnos?: Turno[] // Add turnos array to get actual turno information
-  onReservaSuccess?: (reservedTurnoIds: string[]) => void // Add callback for successful reservation
+  turnos?: Turno[]
+  onReservaSuccess?: (reservedTurnoIds: string[]) => void
 }

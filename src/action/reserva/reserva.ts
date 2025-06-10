@@ -1,4 +1,4 @@
-// reserva.ts - Frontend Action
+
 "use client"
 
 import { CreateReservaParams } from "./interface/CreateReservaParams";
@@ -14,7 +14,7 @@ export async function createReserva(params: CreateReservaParams): Promise<Reserv
   console.log("Iniciando createReserva con parámetros:", params);
 
   try {
-    // Basic validation before sending request
+
     if (!params.clienteId || !params.productoId || !params.turnoIds) {
       console.error("Faltan parámetros requeridos:", {
         clienteId: params.clienteId ? "OK" : "Falta",
@@ -27,7 +27,7 @@ export async function createReserva(params: CreateReservaParams): Promise<Reserv
       };
     }
 
-    // Send request to API
+
     const response = await fetch('/api/reservar', {
       method: 'POST',
       headers: {
@@ -36,11 +36,11 @@ export async function createReserva(params: CreateReservaParams): Promise<Reserv
       body: JSON.stringify(params)
     });
 
-    // Get response data
+
     const data = await response.json();
     console.log("Respuesta de API:", { status: response.status, data });
 
-    // Handle success
+
     if (response.ok) {
       return {
         ok: true,
@@ -49,10 +49,10 @@ export async function createReserva(params: CreateReservaParams): Promise<Reserv
       };
     }
 
-    // Handle error
+
     let errorMessage = data.error || "Error al procesar la reserva";
 
-    // Add more details if available
+
     if (data.details) {
       errorMessage += `: ${typeof data.details === 'string' ? data.details : JSON.stringify(data.details)}`;
     }
@@ -63,7 +63,7 @@ export async function createReserva(params: CreateReservaParams): Promise<Reserv
       message: errorMessage
     };
   } catch (error) {
-    // Handle network errors or unexpected exceptions
+
     console.error("Exception en createReserva:", error);
     const errorMessage = error instanceof Error ? error.message : "Error de conexión al servidor";
 

@@ -13,7 +13,7 @@ import { Input } from "../input"
 import { Checkbox } from "../checkbox"
 import { Button } from "../button"
 
-// Tipos basados en el esquema de Prisma
+
 type EstadoReserva = "PENDIENTE_PAGO" | "PAGADA" | "CANCELADA"
 type MedioPago = "EFECTIVO" | "TRANSFERENCIA"
 type TipoMoneda = "MONEDA_LOCAL" | "MONEDA_EXTRANJERA"
@@ -29,7 +29,7 @@ interface Reserva {
   incluyeSeguro: boolean
   turnoId: string
   productoId: string
-  // Relaciones expandidas
+
   cliente: {
     id: string
     nombre: string
@@ -51,10 +51,10 @@ interface PaymentModalProps {
   onClose: () => void;
   onConfirm: (paymentDetails: any) => void;
   reservas: Reserva[];
-  finalPrice: number; // Add this line
+  finalPrice: number;
 }
 
-export function PaymentModal({ isOpen, onClose, onConfirm, reservas, finalPrice }: PaymentModalProps) { // Update the parameter list
+export function PaymentModal({ isOpen, onClose, onConfirm, reservas, finalPrice }: PaymentModalProps) {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     aplicarDescuento: false,
@@ -81,7 +81,7 @@ export function PaymentModal({ isOpen, onClose, onConfirm, reservas, finalPrice 
         aplicoDescuento: formData.aplicarDescuento,
         porcentajeDescuento: formData.aplicarDescuento ? formData.porcentajeDescuento : 0,
         numeroReferencia: formData.numeroReferencia,
-        montoTotal: finalPrice, // Use the prop here
+        montoTotal: finalPrice,
       });
     } finally {
       setLoading(false);
@@ -161,17 +161,17 @@ export function PaymentModal({ isOpen, onClose, onConfirm, reservas, finalPrice 
             <div className="bg-blue-50 p-3 rounded-md mt-2">
               <div className="flex justify-between items-center">
                 <span className="text-blue-800">Subtotal:</span>
-                <span className="font-medium text-blue-900">${/* Remove calculation */ reservas.reduce((sum, reserva) => sum + reserva.producto.precio, 0).toFixed(2)}</span>
+                <span className="font-medium text-blue-900">${reservas.reduce((sum, reserva) => sum + reserva.producto.precio, 0).toFixed(2)}</span>
               </div>
               {formData.aplicarDescuento && (
                 <div className="flex justify-between items-center mt-1">
                   <span className="text-blue-800">Descuento ({formData.porcentajeDescuento}%):</span>
-                  <span className="font-medium text-green-600">-${/* Remove calculation */ (reservas.reduce((sum, reserva) => sum + reserva.producto.precio, 0) * formData.porcentajeDescuento / 100).toFixed(2)}</span>
+                  <span className="font-medium text-green-600">-${(reservas.reduce((sum, reserva) => sum + reserva.producto.precio, 0) * formData.porcentajeDescuento / 100).toFixed(2)}</span>
                 </div>
               )}
               <div className="flex justify-between items-center mt-2 pt-2 border-t border-blue-200">
                 <span className="text-blue-800 font-medium">Total a Pagar:</span>
-                <span className="font-bold text-blue-900 text-lg">${finalPrice.toFixed(2)}</span>{/* Use the prop here */}
+                <span className="font-bold text-blue-900 text-lg">${finalPrice.toFixed(2)}</span>{ }
               </div>
             </div>
           </div>

@@ -36,39 +36,39 @@ export function ReservaModal({
     incluyeSeguro: false,
   })
 
-  // Set cantidadPersonas based on product type
+
   useEffect(() => {
     if (isOpen) {
       setError(null)
 
-      // If product is EQUIPO_BUCEO or TABLA_SURF, set to 1
+
       if (productType === "EQUIPO_BUCEO" || productType === "TABLA_SURF") {
         setFormData(prev => ({ ...prev, cantidadPersonas: 1 }))
       }
     }
   }, [isOpen, productType])
 
-  // Check if cantidadPersonas field should be disabled
+
   const isCantidadPersonasDisabled = productType === "EQUIPO_BUCEO" || productType === "TABLA_SURF"
 
-  // Check if cantidadPersonas field is for JetSki or Cuatriciclo (limited to 1-2 people)
+
   const isLimitedToTwoPersonas = productType === "JETSKY" || productType === "CUATRICICLO"
 
-  // Determine the minimum and maximum values for cantidadPersonas
+
   const minPersonas = 1
   const maxPersonas = isLimitedToTwoPersonas ? 2 : 10
 
   console.log('PRODUCT ID', productoId);
   console.log('PRODUCT TYPE', productType);
 
-  // Get the selected turnos data based on IDs and sort by date/time
+
   const selectedTurnos = turnos.filter(turno => turnoIds.includes(turno.id))
     .sort((a, b) => new Date(a.fechaHora).getTime() - new Date(b.fechaHora).getTime())
 
-  // Calculate total duration in minutes (30 minutes per turno)
+
   const totalDurationMinutes = turnoIds.length * 30
 
-  // Format total duration as hours and minutes
+
   const formatDuration = (minutes: number) => {
     if (minutes < 60) {
       return `${minutes} minutos`
@@ -81,7 +81,7 @@ export function ReservaModal({
     }
   }
 
-  // Format date and time for display
+
   const formatDateTime = (dateTimeStr: string) => {
     try {
       const date = parseISO(dateTimeStr)
@@ -96,7 +96,7 @@ export function ReservaModal({
     }
   }
 
-  // Group turnos by date
+
   const groupTurnosByDate = () => {
     const grouped: Record<string, typeof selectedTurnos> = {}
 
@@ -111,12 +111,12 @@ export function ReservaModal({
     return grouped
   }
 
-  // Render different information based on number of selected turnos
+
   const renderTurnoDetails = () => {
     if (selectedTurnos.length === 0) {
       return <p className="text-yellow-600">No hay turnos seleccionados</p>
     } else if (selectedTurnos.length === 1) {
-      // Single turno case
+
       const { date, time, endTime } = formatDateTime(selectedTurnos[0].fechaHora)
       return (
         <>
@@ -126,7 +126,7 @@ export function ReservaModal({
         </>
       )
     } else {
-      // Multiple turnos case - group by date
+
       const turnosByDate = groupTurnosByDate()
 
       return (
@@ -157,7 +157,7 @@ export function ReservaModal({
   }
 
   const validateForm = () => {
-    // For JetSky or CUATRICICLO, cantidadPersonas is mandatory and must be 1 or 2
+
     if ((productType === "JETSKY" || productType === "CUATRICICLO") &&
       (formData.cantidadPersonas < 1 || formData.cantidadPersonas > 2)) {
       setError("Para JetSky o Cuatriciclo, la cantidad de personas debe ser 1 o 2")
@@ -172,7 +172,7 @@ export function ReservaModal({
     setLoading(true)
     setError(null)
 
-    // Validate form before submission
+
     if (!validateForm()) {
       setLoading(false)
       return
@@ -211,13 +211,13 @@ export function ReservaModal({
       })
 
       if (result.ok) {
-        // toast({
-        //   title: "Reserva exitosa",
-        //   description: "Tu turno ha sido reservado correctamente",
-        //   variant: "default",
-        // })
 
-        // Call the success callback to update the parent component
+
+
+
+
+
+
         if (onReservaSuccess) {
           onReservaSuccess(turnoIds)
         }

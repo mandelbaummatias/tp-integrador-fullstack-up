@@ -5,7 +5,7 @@ export const formatDateTime = (dateTimeStr: string) => {
   try {
     const date = parseISO(dateTimeStr);
     return {
-      date: format(date, "EEEE d 'de' MMMM 'de' yyyy", { locale: es }), // Incluí el año
+      date: format(date, "EEEE d 'de' MMMM 'de' yyyy", { locale: es }),
       time: format(date, 'h:mm a', { locale: es }),
       endTime: format(addMinutes(date, 30), 'h:mm a', { locale: es }),
     };
