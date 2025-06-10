@@ -68,12 +68,14 @@ export function PaymentModal({ isOpen, onClose, onConfirm, reservas }: PaymentMo
 
   const formatDateTime = (dateTimeStr: string) => {
     try {
-      const date = parseISO(dateTimeStr)
+      const date = new Date(dateTimeStr) // en vez de parseISO
+      if (isNaN(date.getTime())) throw new Error("Invalid date")
       return format(date, "dd/MM/yyyy HH:mm", { locale: es })
     } catch (error) {
       return "Fecha inválida"
     }
   }
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

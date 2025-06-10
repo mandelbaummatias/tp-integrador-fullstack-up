@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { useToast } from "../hooks/use-toast"
 import { getReservas } from "@/action/reserva/reservas"
 import { format, isValid } from "date-fns"
-import { AlertTriangle, Calendar, Clock, CreditCard, Loader2, Package, User } from "lucide-react"
+import { AlertTriangle, Calendar, Clock, CreditCard, Loader2, Package, User, Shield } from "lucide-react"
 import { Alert, AlertDescription } from "../components/ui/alert"
 import { Tabs, TabsList, TabsTrigger } from "../components/ui/tabs"
 import { Button } from "../components/ui/button"
@@ -46,6 +46,16 @@ interface Reserva {
     tipo: TipoProducto
     precio: number
   }
+}
+
+interface PriceCalculation {
+  originalPrice: number
+  insuranceCharge: number
+  subtotalWithInsurance: number
+  multiReservationDiscount: number
+  finalPrice: number
+  hasInsurance: boolean
+  hasMultiDiscount: boolean
 }
 
 export default function ReservasPage() {
@@ -103,6 +113,130 @@ export default function ReservasPage() {
     // Limpiar selecciones al cambiar de tab
     setSelectedReservas([])
   }, [activeTab, reservas])
+
+  const calculatePrice = (reserva: Reserva): PriceCalculation => {
+    const originalPrice = reserva.producto.precio
+    let finalPrice = originalPrice
+
+
+
+    // Check if there are multiple reservations in the system
+    const hasMultipleReservations = reservas.length > 1
+
+    // Apply insurance charge (15%)
+    const insuranceCharge = reserva.incluyeSeguro ? originalPrice * 0.15 : 0
+    const subtotalWithInsurance = originalPrice + insuranceCharge
+    finalPrice = subtotalWithInsurance
+
+    // Apply multi-reservation discount (10%) if there are multiple reservations
+    const multiReservationDiscount = hasMultipleReservations ? subtotalWithInsurance * 0.10 : 0
+    //  finalPrice = subtotalWithInsurance - multiReservationDiscount
+
+
+    finalPrice = hasMultipleReservations ? subtotalWithInsurance * 0.90 : subtotalWithInsurance
+
+    return {
+      originalPrice,
+      insuranceCharge,
+      subtotalWithInsurance,
+      multiReservationDiscount,
+      finalPrice,
+      hasInsurance: reserva.incluyeSeguro,
+      hasMultiDiscount: hasMultipleReservations
+    }
+  }
+
+  const calculateSelectedTotal = (): PriceCalculation => {
+    const selectedReservasData = selectedReservas
+      .map(id => reservas.find(r => r.id === id))
+      .filter(Boolean) as Reserva[]
+
+    // Check if there are multiple reservations in the system (not just selected)
+    const hasMultipleReservations = reservas.length > 1
+
+    let totalOriginal = 0
+    let totalInsuranceCharge = 0
+    let totalSubtotalWithInsurance = 0
+    let totalMultiDiscount = 0
+    let totalFinal = 0
+
+    selectedReservasData.forEach(reserva => {
+      const calc = calculatePrice(reserva)
+      totalOriginal += calc.originalPrice
+      totalInsuranceCharge += calc.insuranceCharge
+      totalSubtotalWithInsurance += calc.subtotalWithInsurance
+      totalMultiDiscount += calc.multiReservationDiscount
+      totalFinal += calc.finalPrice
+    })
+
+    return {
+      originalPrice: totalOriginal,
+      insuranceCharge: totalInsuranceCharge,
+      subtotalWithInsurance: totalSubtotalWithInsurance,
+      multiReservationDiscount: totalMultiDiscount,
+      finalPrice: totalFinal,
+      hasInsurance: totalInsuranceCharge > 0,
+      hasMultiDiscount: hasMultipleReservations
+    }
+  }
+
+  const PriceDisplay = ({ calculation, compact = false }: { calculation: PriceCalculation, compact?: boolean }) => {
+    if (!calculation.hasInsurance && !calculation.hasMultiDiscount) {
+      return (
+        <span className="text-sm font-medium text-blue-800">
+          ${calculation.finalPrice.toFixed(2)}
+        </span>
+      )
+    }
+
+    if (compact) {
+      return (
+        <div className="text-sm">
+          {(calculation.hasInsurance || calculation.hasMultiDiscount) && (
+            <span className="text-gray-500 line-through mr-2">
+              ${calculation.originalPrice.toFixed(2)}
+            </span>
+          )}
+          <span className="font-medium text-blue-800">
+            ${calculation.finalPrice.toFixed(2)}
+          </span>
+        </div>
+      )
+    }
+
+    return (
+      <div className="text-sm space-y-1">
+        <div className="flex items-center justify-between">
+          <span className="text-gray-600">Precio base:</span>
+          <span className={calculation.hasInsurance || calculation.hasMultiDiscount ? "line-through text-gray-500" : "font-medium text-blue-800"}>
+            ${calculation.originalPrice.toFixed(2)}
+          </span>
+        </div>
+
+        {calculation.hasInsurance && (
+          <div className="flex items-center justify-between text-orange-600">
+            <span className="flex items-center gap-1">
+              <Shield className="h-3 w-3" />
+              Seguro (+15%):
+            </span>
+            <span>+${calculation.insuranceCharge.toFixed(2)}</span>
+          </div>
+        )}
+
+        {calculation.hasMultiDiscount && (
+          <div className="flex items-center justify-between text-green-600">
+            <span>Descuento múltiple (-10%):</span>
+            <span>-${calculation.multiReservationDiscount.toFixed(2)}</span>
+          </div>
+        )}
+
+        <div className="flex items-center justify-between font-medium text-blue-800 pt-1 border-t">
+          <span>Total:</span>
+          <span>${calculation.finalPrice.toFixed(2)}</span>
+        </div>
+      </div>
+    )
+  }
 
   const formatDateTime = (input: string | Date) => {
     const date = typeof input === "string" ? new Date(input) : input
@@ -183,15 +317,11 @@ export default function ReservasPage() {
     setCancelModalOpen(true)
   }
 
-
-
   const handleCancelSelected = () => {
     if (selectedReservas.length === 0) return
     setIsMultipleAction(true)
     setCancelModalOpen(true)
   }
-
-
 
   const handlePayReserva = (reservaId: string) => {
     setSelectedForAction(reservaId)
@@ -204,7 +334,6 @@ export default function ReservasPage() {
     setIsMultipleAction(true)
     setPaymentModalOpen(true)
   }
-
 
   const confirmCancel = async () => {
     try {
@@ -250,6 +379,7 @@ export default function ReservasPage() {
       setCancelModalOpen(false);
     }
   }
+
   const confirmPayment = async (paymentDetails: any) => {
     try {
       const idsToPay = isMultipleAction ? selectedReservas : [selectedForAction!]
@@ -323,6 +453,8 @@ export default function ReservasPage() {
     )
   }
 
+  const selectedTotal = selectedReservas.length > 0 ? calculateSelectedTotal() : null
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-sky-100 to-blue-50 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto">
@@ -342,12 +474,25 @@ export default function ReservasPage() {
 
         {selectedReservas.length > 0 && (
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-            <div className="flex flex-wrap justify-between items-center gap-4">
-              <div>
+            <div className="flex flex-col lg:flex-row justify-between items-start gap-4">
+              <div className="flex-1">
                 <span className="font-medium text-blue-800">
                   {selectedReservas.length} {selectedReservas.length === 1 ? "reserva" : "reservas"} seleccionadas
                 </span>
+
+                {selectedTotal && (
+                  <div className="mt-3 p-3 bg-white rounded-lg border border-blue-200">
+                    <h4 className="font-medium text-blue-900 mb-2">Resumen de pago:</h4>
+                    <PriceDisplay calculation={selectedTotal} />
+                    {selectedTotal.hasMultiDiscount && (
+                      <div className="mt-2 text-xs text-green-600 flex items-center gap-1">
+                        <span>✓ Descuento aplicado por múltiples reservas en el sistema</span>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
+
               <div className="flex gap-3">
                 <Button
                   onClick={handlePaySelected}
@@ -358,7 +503,7 @@ export default function ReservasPage() {
                   })}
                 >
                   <CreditCard className="mr-2 h-4 w-4" />
-                  Pagar Seleccionadas
+                  {selectedTotal ? `Pagar $${selectedTotal.finalPrice.toFixed(2)}` : 'Pagar Seleccionadas'}
                 </Button>
                 <Button
                   onClick={handleCancelSelected}
@@ -384,11 +529,13 @@ export default function ReservasPage() {
               const isPendiente = reserva.estado === "PENDIENTE_PAGO"
               const isCancelada = reserva.estado === "CANCELADA"
               const isProcessing = processingIds.includes(reserva.id)
+              const isSelected = selectedReservas.includes(reserva.id)
+              const priceCalc = calculatePrice(reserva)
 
               return (
                 <Card
                   key={reserva.id}
-                  className={`border ${selectedReservas.includes(reserva.id)
+                  className={`border ${isSelected
                     ? "border-blue-500 bg-blue-50"
                     : isCancelada
                       ? "border-gray-200 bg-gray-50"
@@ -396,11 +543,11 @@ export default function ReservasPage() {
                     } hover:shadow-md transition-all duration-200`}
                 >
                   <CardContent className="p-5">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                      <div className="flex items-start gap-3">
+                    <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
+                      <div className="flex items-start gap-3 flex-1">
                         <Checkbox
                           id={`check-${reserva.id}`}
-                          checked={selectedReservas.includes(reserva.id)}
+                          checked={isSelected}
                           onCheckedChange={(checked) => handleCheckboxChange(reserva.id, checked === true)}
                           disabled={isCancelada || isProcessing}
                           className={isCancelada || isProcessing ? "opacity-50" : ""}
@@ -427,10 +574,12 @@ export default function ReservasPage() {
                             </div>
                             <div className="flex items-center gap-2">
                               <CreditCard className="h-4 w-4 text-blue-600" />
-                              <span className="text-sm text-blue-800">
-                                ${reserva.producto.precio.toFixed(2)} (
-                                {reserva.tipoMoneda === "MONEDA_LOCAL" ? "Local" : "Extranjera"})
-                              </span>
+                              <div className="flex flex-col">
+                                <PriceDisplay calculation={priceCalc} compact />
+                                <span className="text-xs text-gray-500">
+                                  ({reserva.tipoMoneda === "MONEDA_LOCAL" ? "Local" : "Extranjera"})
+                                </span>
+                              </div>
                             </div>
                           </div>
 
@@ -443,14 +592,20 @@ export default function ReservasPage() {
                             </Badge>
                             {reserva.incluyeSeguro && (
                               <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                                Con Seguro
+                                <Shield className="h-3 w-3 mr-1" />
+                                Con Seguro (+15%)
+                              </Badge>
+                            )}
+                            {reservas.length > 1 && (
+                              <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
+                                Descuento múltiple (-10%)
                               </Badge>
                             )}
                           </div>
                         </div>
                       </div>
 
-                      <div className="flex gap-3 ml-8 md:ml-0">
+                      <div className="flex gap-3 ml-8 lg:ml-0 lg:flex-col lg:w-auto">
                         {isPendiente && (
                           <Button
                             onClick={() => handlePayReserva(reserva.id)}
@@ -463,7 +618,7 @@ export default function ReservasPage() {
                                 Procesando...
                               </>
                             ) : (
-                              "Pagar"
+                              `Pagar $${priceCalc.finalPrice.toFixed(2)}`
                             )}
                           </Button>
                         )}
