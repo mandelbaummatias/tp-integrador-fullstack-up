@@ -3,7 +3,9 @@ import { PrismaClient, Cliente, TipoMoneda, EstadoReserva, EstadoTurno } from '@
 import { obtenerHoraActualLocal } from '@/utils/conversorHora';
 import { ReservaConProducto } from '@/app/api/interface/ReservaConProductos';
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({
+  log: ["query", "info", "warn", "error"]
+});
 
 /**
  * Valida si se proporciona un ID de cliente.

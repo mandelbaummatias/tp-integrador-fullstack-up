@@ -4,7 +4,9 @@ import { obtenerHoraActualLocal } from '@/utils/conversorHora';
 
 
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({
+  log: ["query", "info", "warn", "error"]
+});
 
 /**
  * Valida las opciones de pago según el medio de pago y el tipo de moneda.
@@ -93,7 +95,6 @@ const validarReglasNegocio = async (
   medioPago?: MedioPago,
 ): Promise<NextResponse | null> => {
 
-
   const turno = await prisma.turno.findUnique({
     where: { id: turnoId }
   });
@@ -102,10 +103,7 @@ const validarReglasNegocio = async (
     return NextResponse.json({ error: 'Turno no encontrado.' }, { status: 404 });
   }
 
-
   const ahora = obtenerHoraActualLocal();
-
-
 
 
   if (turno.fechaHora < ahora) {
@@ -118,8 +116,6 @@ const validarReglasNegocio = async (
   if (medioPago == MedioPago.EFECTIVO) {
     const dosHorasAntes = new Date(turno.fechaHora.getTime() - 2 * 60 * 60 * 1000);
 
-
-
     if (ahora >= dosHorasAntes) {
       return NextResponse.json({
         error: 'El pago en efectivo solo se permite si se realiza con al menos 2 horas de anticipación al turno.'
@@ -130,13 +126,7 @@ const validarReglasNegocio = async (
   const fechaTurno = turno.fechaHora;
 
 
-
-
-
-
-
-
-  const turnosCliente = await prisma.reserva.findMany({
+  const reservasCliente = await prisma.reserva.findMany({
     where: {
       clienteId,
       estado: {
@@ -145,68 +135,58 @@ const validarReglasNegocio = async (
     },
     include: {
       turno: true
-    },
-    orderBy: {
-      turno: {
-        fechaHora: 'asc'
-      }
     }
   });
 
 
+  const turnoYaReservado = reservasCliente.some(
+    reserva => reserva.turnoId === turnoId
+  );
 
-
-  const turnosOrdenados = turnosCliente
-    .map(reserva => new Date(reserva.turno.fechaHora))
-    .sort((a, b) => a.getTime() - b.getTime());
-
-  let consecutivos = 1;
-  let lastTime: Date | null = null;
-
-
-
-
-  for (const currentTime of turnosOrdenados) {
-    if (lastTime) {
-      const diffMinutos = (currentTime.getTime() - lastTime.getTime()) / (1000 * 60);
-
-      if (diffMinutos === 30) {
-        consecutivos++;
-      } else {
-        consecutivos = 1;
-      }
-    }
-
-    lastTime = currentTime;
-
-
-    if (consecutivos === 3 && lastTime.getTime() + 30 * 60 * 1000 === fechaTurno.getTime()) {
-      return NextResponse.json({
-        error: 'No se pueden reservar más de 3 turnos consecutivos. Ya tiene 3 turnos previos consecutivos.'
-      }, { status: 400 });
-    }
-
-
-
-
-    for (let i = 0; i < turnosOrdenados.length - 1; i++) {
-
-
-      const first = turnosOrdenados[i];
-      const second = turnosOrdenados[i + 1];
-
-
-      if (first.getTime() + 30 * 60 * 1000 === fechaTurno.getTime() &&
-        fechaTurno.getTime() + 30 * 60 * 1000 === second.getTime()) {
-        return NextResponse.json({
-          error: 'No se puede reservar este turno porque generaría 3 turnos consecutivos.'
-        }, { status: 400 });
-      }
-    }
-
+  if (turnoYaReservado) {
+    return NextResponse.json({
+      error: 'Ya tiene una reserva para este turno.'
+    }, { status: 400 });
   }
 
 
+  const fechasTurnos = reservasCliente.map(reserva => reserva.turno.fechaHora);
+
+
+  const todasLasFechas = [...fechasTurnos, fechaTurno];
+
+
+  todasLasFechas.sort((a, b) => a.getTime() - b.getTime());
+
+
+  let consecutivos = 1;
+
+  for (let i = 1; i < todasLasFechas.length; i++) {
+    const fechaActual = todasLasFechas[i];
+    const fechaAnterior = todasLasFechas[i - 1];
+
+
+    const diffMinutos = (fechaActual.getTime() - fechaAnterior.getTime()) / (1000 * 60);
+
+    if (diffMinutos === 30) {
+      consecutivos++;
+
+
+      if (consecutivos >= 4 && (
+        fechaActual.getTime() === fechaTurno.getTime() ||
+        fechaAnterior.getTime() === fechaTurno.getTime() ||
+        (i >= 2 && todasLasFechas[i - 2].getTime() === fechaTurno.getTime()) ||
+        (i >= 3 && todasLasFechas[i - 3].getTime() === fechaTurno.getTime())
+      )) {
+        return NextResponse.json({
+          error: 'No se pueden reservar más de 3 turnos consecutivos.'
+        }, { status: 400 });
+      }
+    } else {
+
+      consecutivos = 1;
+    }
+  }
 
 
   const diferenciaHoras = (fechaTurno.getTime() - ahora.getTime()) / (1000 * 60 * 60);
@@ -219,7 +199,6 @@ const validarReglasNegocio = async (
 
   return null;
 };
-
 /**
  * Obtiene los dispositivos de seguridad necesarios según el tipo de producto y la cantidad de personas.
  *
