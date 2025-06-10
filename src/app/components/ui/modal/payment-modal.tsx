@@ -143,16 +143,7 @@ export function PaymentModal({ isOpen, onClose, onConfirm, reservas }: PaymentMo
               </div>
             )}
 
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="aplicar-descuento"
-                checked={formData.aplicarDescuento}
-                onCheckedChange={(checked) => setFormData({ ...formData, aplicarDescuento: checked === true })}
-              />
-              <Label htmlFor="aplicar-descuento" className="cursor-pointer text-blue-800">
-                Aplicar Descuento
-              </Label>
-            </div>
+
 
             {formData.aplicarDescuento && (
               <div className="grid gap-2">

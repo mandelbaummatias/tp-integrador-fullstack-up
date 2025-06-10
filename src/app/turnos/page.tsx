@@ -16,6 +16,7 @@ import Skeleton from '../components/ui/skeleton/general-skeleton';
 import Error from '../components/ui/error/error';
 import { Alert, AlertDescription } from '../components/ui/alert';
 import { useToast } from '../hooks/use-toast';
+import { obtenerHoraActualLocal } from '../../utils/conversorHora';
 
 export default function Turnos() {
   const searchParams = useSearchParams();
@@ -29,9 +30,14 @@ export default function Turnos() {
   const [selectedTurnos, setSelectedTurnos] = useState<string[]>([]);
   const [reservaModalOpen, setReservaModalOpen] = useState(false);
   const [reservaExitosa, setReservaExitosa] = useState(false);
+  const [currentDateTime, setCurrentDateTime] = useState<Date>(new Date());
 
   useEffect(() => {
     loadTurnos();
+    const horaActual = obtenerHoraActualLocal();
+    horaActual.setHours(horaActual.getHours() + 3); // Adds 3 hours
+    setCurrentDateTime(horaActual);
+    console.log('Hora actual:', horaActual);
   }, []);
 
   async function loadTurnos() {
@@ -54,6 +60,12 @@ export default function Turnos() {
       setLoading(false);
     }
   }
+
+  // Function to check if a turno has already started or is starting now
+  const isTurnoExpired = (turno: Turno) => {
+    const turnoDateTime = new Date(turno.fechaHora);
+    return turnoDateTime <= currentDateTime;
+  };
 
   // Function to handle successful reservation
   const handleReservaSuccess = (reservedTurnoIds: string[]) => {
@@ -84,6 +96,9 @@ export default function Turnos() {
     const turnoToCheck = turnos.find(t => t.id === turnoId);
     if (!turnoToCheck) return false;
 
+    // Check if the turno has already started
+    if (isTurnoExpired(turnoToCheck)) return true;
+
     // Simular la selección con el nuevo turno incluido
     const simulatedSelection = [...selectedTurnos, turnoId];
 
@@ -112,6 +127,18 @@ export default function Turnos() {
   };
 
   const handleCheckboxChange = (turnoId: string, checked: boolean) => {
+    const turno = turnos.find(t => t.id === turnoId);
+
+    if (checked && turno && isTurnoExpired(turno)) {
+      toast({
+        title: 'Turno no disponible',
+        description: 'No puedes reservar un turno que ya ha comenzado o está por comenzar.',
+        variant: 'destructive',
+        duration: 5000,
+      });
+      return;
+    }
+
     if (checked) {
       if (wouldViolateConsecutiveRule(turnoId)) return;
       setSelectedTurnos([...selectedTurnos, turnoId]);
@@ -121,11 +148,39 @@ export default function Turnos() {
   };
 
   const handleReserveSelected = () => {
+    // Check if any selected turno has expired
+    const expiredTurnos = selectedTurnos.filter(id => {
+      const turno = turnos.find(t => t.id === id);
+      return turno && isTurnoExpired(turno);
+    });
+
+    if (expiredTurnos.length > 0) {
+      toast({
+        title: 'Turnos no disponibles',
+        description: 'Algunos turnos seleccionados ya han comenzado. Por favor, actualiza tu selección.',
+        variant: 'destructive',
+        duration: 5000,
+      });
+      // Remove expired turnos from selection
+      setSelectedTurnos(selectedTurnos.filter(id => !expiredTurnos.includes(id)));
+      return;
+    }
+
     console.log('Reservando turnos seleccionados:', selectedTurnos);
     setReservaModalOpen(true);
   };
 
   const handleReserveIndividual = (turno: Turno) => {
+    if (isTurnoExpired(turno)) {
+      toast({
+        title: 'Turno no disponible',
+        description: 'No puedes reservar un turno que ya ha comenzado o está por comenzar.',
+        variant: 'destructive',
+        duration: 5000,
+      });
+      return;
+    }
+
     setSelectedTurnos([turno.id]); // ← Esto reemplaza todos los turnos seleccionados con uno solo
     setReservaModalOpen(true);
   };
@@ -205,6 +260,7 @@ export default function Turnos() {
                 <li>Cada turno tiene una duración de 30 minutos</li>
                 <li>Puedes reservar hasta 3 turnos consecutivos</li>
                 <li>Selecciona los turnos con los checkboxes para reservar varios a la vez</li>
+                <li>No puedes reservar turnos que ya han comenzado</li>
                 {(productType === "JETSKY" || productType === "CUATRICICLO") && (
                   <li>Este producto permite hasta 2 personas por reserva</li>
                 )}
@@ -243,26 +299,41 @@ export default function Turnos() {
                 {turnosForDate.map((turno) => {
                   const { time, endTime } = formatDateTime(turno.fechaHora);
                   const isDisabled = wouldViolateConsecutiveRule(turno.id);
+                  const isExpired = isTurnoExpired(turno);
+                  const isUnavailable = isDisabled || isExpired;
 
                   return (
                     <Card
                       key={turno.id}
-                      className={`border ${selectedTurnos.includes(turno.id) ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
-                        } hover:shadow-md transition-all duration-200`}
+                      className={`border ${selectedTurnos.includes(turno.id)
+                          ? 'border-blue-500 bg-blue-50'
+                          : isExpired
+                            ? 'border-red-200 bg-red-50'
+                            : 'border-gray-200'
+                        } ${isExpired ? 'opacity-60' : 'hover:shadow-md'} transition-all duration-200`}
                     >
                       <CardContent className="p-4">
                         <div className="flex justify-between items-start">
                           <div className="flex items-center gap-2">
                             <Clock className="h-5 w-5 text-blue-600" />
                             <div>
-                              <p className="font-medium text-blue-900">
+                              <p className={`font-medium ${isExpired ? 'text-red-700' : 'text-blue-900'}`}>
                                 {time} - {endTime}
                               </p>
-                              <p className="text-sm text-blue-700">Duración: 30 minutos</p>
+                              <p className={`text-sm ${isExpired ? 'text-red-600' : 'text-blue-700'}`}>
+                                Duración: 30 minutos
+                              </p>
                             </div>
                           </div>
-                          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                            Disponible
+                          <Badge
+                            variant="outline"
+                            className={
+                              isExpired
+                                ? "bg-red-50 text-red-700 border-red-200"
+                                : "bg-green-50 text-green-700 border-green-200"
+                            }
+                          >
+                            {isExpired ? 'No disponible' : 'Disponible'}
                           </Badge>
                         </div>
 
@@ -272,22 +343,27 @@ export default function Turnos() {
                               id={`check-${turno.id}`}
                               checked={selectedTurnos.includes(turno.id)}
                               onCheckedChange={(checked) => handleCheckboxChange(turno.id, checked === true)}
-                              disabled={isDisabled}
-                              className={isDisabled ? 'opacity-50 cursor-not-allowed' : ''}
+                              disabled={isUnavailable}
+                              className={isUnavailable ? 'opacity-50 cursor-not-allowed' : ''}
                             />
                             <label
                               htmlFor={`check-${turno.id}`}
-                              className={`text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 ${isDisabled ? 'text-gray-400' : 'text-blue-700'
+                              className={`text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 ${isUnavailable ? 'text-gray-400' : 'text-blue-700'
                                 }`}
                             >
-                              Seleccionar
+                              {isExpired ? 'No disponible' : 'Seleccionar'}
                             </label>
                           </div>
 
                           <Button
                             onClick={() => handleReserveIndividual(turno)}
                             variant="outline"
-                            className="border-blue-300 text-blue-700 hover:bg-blue-50"
+                            disabled={isExpired}
+                            className={
+                              isExpired
+                                ? "border-red-300 text-red-400 cursor-not-allowed opacity-50"
+                                : "border-blue-300 text-blue-700 hover:bg-blue-50"
+                            }
                           >
                             Reservar
                           </Button>
