@@ -47,54 +47,48 @@ interface Reserva {
 }
 
 interface PaymentModalProps {
-  isOpen: boolean
-  onClose: () => void
-  onConfirm: (paymentDetails: any) => void
-  reservas: Reserva[]
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: (paymentDetails: any) => void;
+  reservas: Reserva[];
+  finalPrice: number; // Add this line
 }
 
-export function PaymentModal({ isOpen, onClose, onConfirm, reservas }: PaymentModalProps) {
-  const [loading, setLoading] = useState(false)
+export function PaymentModal({ isOpen, onClose, onConfirm, reservas, finalPrice }: PaymentModalProps) { // Update the parameter list
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     aplicarDescuento: false,
     porcentajeDescuento: 10,
     numeroReferencia: "",
-  })
-
-  // Calcular el total a pagar
-  const totalSinDescuento = reservas.reduce((sum, reserva) => sum + reserva.producto.precio, 0)
-  const descuento = formData.aplicarDescuento ? (totalSinDescuento * formData.porcentajeDescuento) / 100 : 0
-  const totalConDescuento = totalSinDescuento - descuento
+  });
 
   const formatDateTime = (dateTimeStr: string) => {
     try {
-      const date = new Date(dateTimeStr) // en vez de parseISO
-      if (isNaN(date.getTime())) throw new Error("Invalid date")
-      return format(date, "dd/MM/yyyy HH:mm", { locale: es })
+      const date = new Date(dateTimeStr);
+      if (isNaN(date.getTime())) throw new Error("Invalid date");
+      return format(date, "dd/MM/yyyy HH:mm", { locale: es });
     } catch (error) {
-      return "Fecha inválida"
+      return "Fecha inválida";
     }
-  }
-
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
+    e.preventDefault();
+    setLoading(true);
 
     try {
       await onConfirm({
         aplicoDescuento: formData.aplicarDescuento,
         porcentajeDescuento: formData.aplicarDescuento ? formData.porcentajeDescuento : 0,
         numeroReferencia: formData.numeroReferencia,
-        montoTotal: totalConDescuento,
-      })
+        montoTotal: finalPrice, // Use the prop here
+      });
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
-  // Determinar si hay al menos una reserva con transferencia
-  const hayTransferencia = reservas.some(r => r.medioPago === "TRANSFERENCIA")
+  const hayTransferencia = reservas.some(r => r.medioPago === "TRANSFERENCIA");
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -145,8 +139,6 @@ export function PaymentModal({ isOpen, onClose, onConfirm, reservas }: PaymentMo
               </div>
             )}
 
-
-
             {formData.aplicarDescuento && (
               <div className="grid gap-2">
                 <Label htmlFor="porcentajeDescuento" className="text-blue-800">
@@ -169,17 +161,17 @@ export function PaymentModal({ isOpen, onClose, onConfirm, reservas }: PaymentMo
             <div className="bg-blue-50 p-3 rounded-md mt-2">
               <div className="flex justify-between items-center">
                 <span className="text-blue-800">Subtotal:</span>
-                <span className="font-medium text-blue-900">${totalSinDescuento.toFixed(2)}</span>
+                <span className="font-medium text-blue-900">${/* Remove calculation */ reservas.reduce((sum, reserva) => sum + reserva.producto.precio, 0).toFixed(2)}</span>
               </div>
               {formData.aplicarDescuento && (
                 <div className="flex justify-between items-center mt-1">
                   <span className="text-blue-800">Descuento ({formData.porcentajeDescuento}%):</span>
-                  <span className="font-medium text-green-600">-${descuento.toFixed(2)}</span>
+                  <span className="font-medium text-green-600">-${/* Remove calculation */ (reservas.reduce((sum, reserva) => sum + reserva.producto.precio, 0) * formData.porcentajeDescuento / 100).toFixed(2)}</span>
                 </div>
               )}
               <div className="flex justify-between items-center mt-2 pt-2 border-t border-blue-200">
                 <span className="text-blue-800 font-medium">Total a Pagar:</span>
-                <span className="font-bold text-blue-900 text-lg">${totalConDescuento.toFixed(2)}</span>
+                <span className="font-bold text-blue-900 text-lg">${finalPrice.toFixed(2)}</span>{/* Use the prop here */}
               </div>
             </div>
           </div>
@@ -202,5 +194,5 @@ export function PaymentModal({ isOpen, onClose, onConfirm, reservas }: PaymentMo
         </form>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

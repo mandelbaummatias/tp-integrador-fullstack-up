@@ -74,6 +74,8 @@ export default function ReservasPage() {
   const [selectedForAction, setSelectedForAction] = useState<string | null>(null)
   const [isMultipleAction, setIsMultipleAction] = useState(false)
 
+
+
   useEffect(() => {
     async function loadReservas() {
       try {
@@ -323,17 +325,24 @@ export default function ReservasPage() {
     setCancelModalOpen(true)
   }
 
+  const [finalPriceForModal, setFinalPriceForModal] = useState(0); // Add this state
+
   const handlePayReserva = (reservaId: string) => {
-    setSelectedForAction(reservaId)
-    setIsMultipleAction(false)
-    setPaymentModalOpen(true)
-  }
+    setSelectedForAction(reservaId);
+    setIsMultipleAction(false);
+    const reserva = reservas.find(r => r.id === reservaId);
+    if (reserva) {
+      setFinalPriceForModal(calculatePrice(reserva).finalPrice); // Calculate and set the price
+    }
+    setPaymentModalOpen(true);
+  };
 
   const handlePaySelected = () => {
-    if (selectedReservas.length === 0) return
-    setIsMultipleAction(true)
-    setPaymentModalOpen(true)
-  }
+    if (selectedReservas.length === 0) return;
+    setIsMultipleAction(true);
+    setFinalPriceForModal(calculateSelectedTotal().finalPrice); // Calculate and set the price
+    setPaymentModalOpen(true);
+  };
 
   const confirmCancel = async () => {
     try {
@@ -672,13 +681,8 @@ export default function ReservasPage() {
         isOpen={paymentModalOpen}
         onClose={() => setPaymentModalOpen(false)}
         onConfirm={confirmPayment}
-        reservas={
-          isMultipleAction
-            ? selectedReservas.map((id) => reservas.find((r) => r.id === id)!).filter(Boolean)
-            : selectedForAction
-              ? [reservas.find((r) => r.id === selectedForAction)!].filter(Boolean)
-              : []
-        }
+        reservas={isMultipleAction ? selectedReservas.map(id => reservas.find(r => r.id === id)).filter(Boolean) as Reserva[] : selectedForAction ? [reservas.find(r => r.id === selectedForAction)!] : []}
+        finalPrice={finalPriceForModal} // Pass the calculated price
       />
     </div>
   )
