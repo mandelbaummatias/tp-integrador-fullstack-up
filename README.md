@@ -46,6 +46,15 @@ Para ejecutar la aplicación, sigue estos pasos en tu terminal (CMD):
 
 ---
 
+PARA LEVANTAR EL FRONT:
+
+1. Ejecutar
+  
+3. ```bash
+    npm run dev
+    ```
+4. Ingresar a http://localhost:3000
+
 # API Endpoints Documentation
 
 Este documento describe los endpoints disponibles en la API del sistema de reservas.
@@ -59,7 +68,7 @@ Este documento describe los endpoints disponibles en la API del sistema de reser
 5. [GET /api/getTotalAPagar/{id}](#get-apigetTotalAPagarid)
 6. [GET /api/healthcheck](#get-apihealthcheck)
 7. [POST /api/liberarTurnosNoPagados](#post-apiliberarTurnosNoPagados)
-8. [POST /api/pagarReserva](#post-apipagarReserva)
+8. [POST /api/pagarReserva](#post-apipagarReserva) (No se usa en el front, ya que se toma pagarReservas que, si es una sola reserva, toma solo esa reserva de la colección de reservas)
 9. [POST /api/pagarReservas](#post-apipagarReservas)
 
 ---
