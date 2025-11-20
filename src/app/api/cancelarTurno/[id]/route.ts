@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient, EstadoReserva, EstadoTurno, TipoMoneda } from '@prisma/client';
-import { validarTurnoId, validarExistenciaTurnoYReserva, validarReglaCancelacion } from './utils/validaciones';
+import { validarReservaId, validarExistenciaReserva, validarReglaCancelacion } from './utils/validaciones';
 
 const prisma = new PrismaClient({
   log: ["query", "info", "warn", "error"]
@@ -18,7 +18,7 @@ export async function PUT(
 
 
 
-    const errorTurnoId = validarTurnoId(turnoId);
+    const errorTurnoId = validarReservaId(turnoId);
     if (errorTurnoId) return errorTurnoId;
 
 
@@ -36,7 +36,7 @@ export async function PUT(
     });
 
 
-    const errorTurnoReserva = validarExistenciaTurnoYReserva(turno);
+    const errorTurnoReserva = validarExistenciaReserva(turno);
     if (errorTurnoReserva) return errorTurnoReserva;
 
 

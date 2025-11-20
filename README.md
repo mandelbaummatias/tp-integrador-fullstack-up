@@ -2,19 +2,13 @@
 
 Para ejecutar la aplicación, sigue estos pasos en tu terminal (CMD):
 
-1.  Clona el repositorio desde GitHub:
+1.  Navega al directorio del proyecto:
 
     ```bash
-    git clone https://github.com/mandelbaummatias/tp-integrador-fullstack-up.git
+    cd tp-integrador-up
     ```
 
-2.  Navega al directorio del proyecto:
-
-    ```bash
-    cd tp-integrador-fullstack-up
-    ```
-
-3.  Crea un archivo `.env` en esta carpeta y agrega la variable de entorno proporcionada. Por ejemplo, si tu URL de la base de datos es `miurlremota`, puedes hacerlo con el siguiente comando:
+2.  Crea un archivo `.env` en esta carpeta y agrega la variable de entorno proporcionada. Por ejemplo, si tu URL de la base de datos es `miurlremota`, puedes hacerlo con el siguiente comando:
 
     ```bash
     echo DATABASE_URL=miurlremota > .env
@@ -22,19 +16,19 @@ Para ejecutar la aplicación, sigue estos pasos en tu terminal (CMD):
 
     **Importante:** Asegúrate de reemplazar `miurlremota` con la URL de tu base de datos.
 
-4.  Instala las dependencias del proyecto:
+3.  Instala las dependencias del proyecto:
 
     ```bash
     npm i
     ```
 
-5.  Genera el cliente de Prisma:
+4.  Genera el cliente de Prisma:
 
     ```bash
     npx prisma generate
     ```
 
-6.  Ejecuta el servidor de desarrollo:
+5.  Ejecuta el servidor de desarrollo:
 
     ```bash
     npm run dev
@@ -42,18 +36,25 @@ Para ejecutar la aplicación, sigue estos pasos en tu terminal (CMD):
 
     Este comando iniciará el servidor y podrás acceder a la documentación de los endpoints de la API.
 
-7.  Correr colección "tp-integrador-parador-CU's" en Postman
+6.  Correr colección "tp-integrador-parador-CU's" en Postman
 
 ---
 
 PARA LEVANTAR EL FRONT:
 
 1. Ejecutar
-  
-3. ```bash
-    npm run dev
-    ```
-4. Ingresar a http://localhost:3000
+
+2. ```bash
+   npm run dev
+   ```
+3. Ingresar a http://localhost:3000
+
+Pantallas:
+
+http://localhost:3000/turnos
+
+
+http://localhost:3000/reservas
 
 # API Endpoints Documentation
 
